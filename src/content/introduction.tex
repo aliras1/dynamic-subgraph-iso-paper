@@ -1,0 +1,127 @@
+%----------------------------------------------------------------------------
+\chapter{\bevezetes}
+%----------------------------------------------------------------------------
+
+Subgraph isomorphism is an NP-hard problem which has many application areas.
+It is called substructure search in cheminformatics and it is used to find
+similar molecular compounds based on their structural formula. In bioinformatics,
+complex biological systems are decomposed into several different networks,
+such as protein-protein interaction, metabolic interaction or hormone signaling
+networks, which are represented as graphs. Analyzing and understanding these
+large networks requires finding certain topological patterns, i.e. subgraph
+isomorphism. 
+
+Graph pattern matching is also a core concept of social network analysis.
+Such graphs tend to be extremely large with millions of vertices and billions
+of edges in the real world. Although subgraph isomorphism has been extensively
+studied in the past, there was a renewed interest in the topic recently, which
+yielded some notable results. The newer algorithms significantly out-perform
+the previous state-of-the-art solutions \todo{ullman, vf2}, sometimes even 
+in order of magnitudes. This made it possible to query subgraph isomorphisms
+in such large graphs. However social networks are not static. In practice, they
+are frequently updated with typically small changes like adding or removing edges.
+Despite the changes being small, they will still have an impact on the matches.
+This means that the matches have to be re-computed from scratch on every update,
+which is highly infeasible even with the newer and faster subgraph isomorphism
+algorithms. To minimize unnecessary re-computations, incremental algorithms
+can be used, that compute the changes in matches based on the changes in the
+search graph.
+
+[] \todo{cite \url{https://www.pure.ed.ac.uk/ws/portalfiles/portal/17894104/Fan_Li_ET_AL_2011_Incremental_Graph_Pattern_Matching.pdf}}
+discusses in depth several types of incremental graph pattern matching algorithms.
+However the authors' topic of interest in [] is incremental graph pattern matching
+with (bounded) graph simulation. A graph \(G\) matches a pattern \(q\) via graph 
+simulation if there exists a binary relation \(S \subseteq V_q \times V\) such that 
+\begin{enumerate}
+    \item for each \(u \in V_q\), there exists \(v \in V\) such that \((u, v) \in S\);
+    \item for each \((u, v) \in S\), 
+        \begin{enumerate}
+            \item \(\mathcal{L}(u) = \mathcal{L}(v)\), and
+            \item for each edge \((u, u') \in E_q\), there exists a non-empty path \(\rho = v \rightsquigarrow v'\) in \(G\) such that \((u', v') \in S\) and the length of \(\rho\) is less than the maximum allowed length defined on the given edge in \(q\).
+        \end{enumerate}
+\end{enumerate}
+Graph simulation is less strict about the topology of its results than graph
+isomorphism. This can be beneficial if we want to express loose connections in
+our query patterns, and on top of that, pattern matching with graph simulation
+can be done in \(\mathcal{O}(n^3)\). However if we do require strict matches,
+only subgraph isomorphism can come into play. Although the authors provided an
+incremental algorithm for subgraph isomorphism, it was more of a demonstration
+that even in an NP-hard case, computing matches incrementally (which is also
+NP-hard) can out-perform a fast solution, VF2. The approach introduced there
+does not take full advantage on previous computations, and it was also not 
+evaluated in much detail. Note that this was not the main focus of the paper.
+
+In this work, we investigate how two state-of-the-art algorithms (VF2++, DAF)
+can be converted into their incremental version. First, we give an introduction
+how the two algorithms work. Then we describe a method to make them incremental.
+Finally, we evaluate the results both in terms of complexity and practical
+measurements.
+
+\section{Background}
+
+\begin{definition}[Graph]
+    A graph is a pair \(G = (V,E)\), where \(V\) is a set of vertices,
+    \(E\) is a set of paired vertices that denotes the undirected edges 
+    of the graph. 
+\end{definition}
+
+\begin{definition}[Labelling]
+    \( \mathcal{L} : V \rightarrow K \), is a vertex labelling function 
+    which maps vertices into arbitrary sets whose elements are the labels
+    of the given node. Two vertices, \(u, v\) are equivalent if 
+    \( \mathcal{L}(u) = \mathcal{L}(v) \).
+\end{definition}
+
+\begin{definition}[Isomorphism]
+    \(G_1\) and \(G_2\) are isomorphic if a bijection exists between \(V_1\)
+    and \(V_2\) such that two vertices are neighbours in \(G_1\) if and only
+    if their respective pairs in \(G_2\) are neighbours, neighbouring 
+    vertex pairs have the same number of edges between each other, and a
+    vertex and its pair have the same labels.
+\end{definition}
+
+\begin{definition}[Subgraph]
+    \(G_1\) is a subgraph of \(G_2\) if \(V_1 \subseteq V_2 \), \(E_1 \subseteq E_2\)
+    and two vertices are neighbours in \(G_1\) only if they are neighbours in \(G_2\).
+\end{definition}
+
+\begin{definition}[Induced subgraph]
+    If \(E_1\) consists of those edges from \(E_2\) whose both vertices are in
+    \(V_1\), and \(E_1\) contains all these edges, then \(G_1\) is an induced
+    subgraph of \(G_2\).
+\end{definition}
+
+\begin{definition}[Subgraph isomorphism]
+    \(G_1\) is subgraph isomorphic to \(G_2\) if \(G_1\) is isomorphic to any
+    subgraphs of \(G_2\).
+\end{definition}
+
+\begin{definition}[Induced subgraph isomorphism]
+    \(G_1\) is induced subgraph isomorphic to \(G_2\) if \(G_1\) is isomorphic to any
+    induced subgraphs of \(G_2\). Throughout this paper, we refer to induced subgraph
+    isomorphism with the term of subgraph isomorphism. $M(q, G)$ denotes the set of 
+    mappings found by an arbitrary subgraph isomorphism algorithm.
+\end{definition}
+
+
+
+This paper concentrates on the (induced) subgraph isomorphism problem in dynamic
+graphs, i.e. graphs that change with time. After finding the initial matches given a
+query graph \(q\) and a data graph \(G\), keep the set of matches up to date in response
+to small updates \(\Delta G \) on \(G\) without recomputing all matches from scratch.
+\(\Delta G\) can be one of the following operations:
+\begin{itemize}
+    \item add a new node to \(G\),
+    \item remove an existing node from \(G\),
+    \item add an edge between two nodes of \(G\) and
+    \item remove an existing edge between two nodes of \(G\).
+\end{itemize}
+
+\section{Algorithms}
+
+This section gives a brief overview on how the two algorithms of interest (DAF and VF2++)
+work.
+
+\subsection{VF2++}
+
+\subsubsection{DAF}

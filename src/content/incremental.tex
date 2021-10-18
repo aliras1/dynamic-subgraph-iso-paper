@@ -1,0 +1,287 @@
+\chapter{Incremental algorithms}
+
+This chapter describes two incremental algorithms for finding subgraph isomorphisms
+in dynamic graphs. First we introduce the approach proposed in []. Then we present
+our generic method which can be applied to DAF and VF2++ respectively.
+
+
+
+\section{Locality based method}
+
+Let \(d\) denote the diameter of the query graph \(q\) which corresponds to the 
+length of the longest shortest path in $q$. Let $\Delta e$ denote the addition or
+deletion of edge $e = (v, v')$ in $G$. Moreover let $V(d, e)$ be the set of vertices
+in $G$ that are within a distance $d$ from $v$ or $v'$. Finally, let $G(d, e)$
+be the subgraph of $G$ induced by $V(d, e)$, and $\Delta G(d, e)$ be the subgraph
+of $\Delta G$ induced by $V(d, e)$, where $\Delta G = (V, E \setminus \{e\})$ or
+$\Delta G = (V, E \cup \{e\})$ depending on the operation of $\Delta e$. With these
+notations, we can define the locality property of subgraph isomorphism. For any 
+given changes of $\Delta e$ in $G$, the changes $\Delta M$ in the set of mappings
+$M(q, G)$ is the difference between $M(q, G(d, e))$ and $M(q, \Delta G(d, e))$, i.e.
+the difference between the mappings found in the $d$th neighborhood of the original graph
+and in the neighborhood's modified version. This is a trivial property because new mappings can 
+appear or become obsolete only in the immediate vicinity of the affected edge $e$. 
+Mappings further away from $e$ than $d$ are not affected by $\Delta e$ because neither 
+vertices of $e$ are reachable from there. Regardless of that a new edge was added
+or an old one was removed, mappings can both appear and become obsolete in the updated
+graph. The mappings that have to be added to the existing set is 
+$M(q, \Delta G(d, e)) \setminus M(q, G(d, e))$, while the mappings that have to be
+removed are $M(q, G(d, e)) \setminus M(q, \Delta G(d, e))$.
+
+The algorithm uses this locality property as follows. Given a query graph $q$ and a 
+data graph $G$, compute the initial set of mappings $M$ with a classic subgraph 
+isomorphism algorithm, e.g. VF2++. Then, for each update $\Delta e$, (1) find the 
+diameter $d$ of $q$, (2) extract the subgraph $\Delta G(d, e)$ from $G$, (3) compute 
+$M(q, \Delta G(e, d))$, (4) then update $M$ as described above.
+
+\SetKwComment{Comment}{/* }{ */}
+
+\begin{algorithm}
+\caption{Locality algorithm}\label{alg:two}
+\KwIn{$q, G, \Delta e, M = VF2++(q, G)$}
+$d \gets diameter(q)$\;
+$G_{d, e} \gets G(d, e)$\;
+$\Delta M \gets VF2++(q, G_{d, e})$\;
+$M = M \cup M(q, \Delta G(d, e)) \setminus M(q, G(d, e))$\;
+$M = M \setminus M(q, G(d, e)) \setminus M(q, \Delta G(d, e))$\;
+\KwRet{$M$}
+\end{algorithm}
+
+Instead of re-computing all mappings in $G$, this method works on a subset of $G$.
+Although a regular subgraph isomorphism is running in the background, reducing the
+size of the input data graph can make this variant faster. The effectiveness depends
+on the query graph and the data graph. If $G(d, e)$ remains small compared to $G$,
+there will be a massive speed up. However if $G(d, e) \sim G$, for example in case of
+small world networks, the algorithm performs the same as a regular subgraph isomorphism
+algorithm.
+
+
+\section{Search tree based method}
+
+This chapter describes our method of making the previously introduced algorithms
+incremental. One way or another, both algorithms traverse a search tree eventually.
+In both cases the search tree is purely abstract, it has no physical manifestation
+in the memory whatsoever. We propose to store the traversed search tree while running
+subgraph isomorphism initially, and make use of it in future updates. $T_{q, G}$ is a
+search tree of query graph $q$ and data graph $G$, where paths from the root to a leaf
+correspond to (partial) mappings, and a node contains an $(u, v)$ pair where 
+$u \in V_q, v \in V_G$ denotes a single vertex mapping. The root $r$ of $T_{q, G}$
+contains an empty mapping. A root-to-leaf path, whose length $l = |V_q|$ is a complete
+mapping because it maps all nodes of $q$. The rest of the root-to-leaf paths correspond
+to partial mappings.
+
+In a typical scenario at the end of an execution of a subgraph isomorphism algorithm,
+the search tree contains some complete mappings and orders of magnitude more partial 
+mappings that for some reason could not be extended any further. These partial mappings 
+play a crucial role in the incremental version. One can think about them as potential 
+partially precalculated mappings. The reason, why a partial mapping could not be extended
+is because the algorithm ran out of valid candidates in the area of the mapped nodes' 
+neighborhood in \(G\). This is caused because by some kind of conflict between the 
+topology of \(q\) and the topology of the mapped nodes and their neighborhood. These 
+conflicts could be resolved when a new edge is added to or an old one is deleted from 
+\(G\). At this point, having these partial mappings in memory can speed up the process 
+of removing  matches that became obsolete and finding new ones that were impossible in 
+the past.
+
+In the upcoming sections, we define an incremental algorithm for each type of graph 
+modifications.
+
+\subsection{Node deletion}
+
+Deleting a node from $v_d$ from $G$ can only reduce the original number of mappings.
+Mappings that did not contain $v_d$ are unaffected, while those that contained $v_d$ 
+have to be removed since they no longer can map to $v_d$. Now we only have to think 
+through that no new mappings could arise. Indeed, that cannot be the case because
+the only edges that were removed are edges belonging to $v_d$ which means only 
+partial mappings which contain $v_d$ are affected. However since $v_d$ itself is also
+deleted, these mappings become obsolete, which means that no new mappings can be
+found.
+
+Since there are no new mappings to be found, the only work to do in case of a node
+deletion is pruning the search tree $T_{q, G}$. More specifically, cut off every
+sub-branch that starts with a node $(u, v)$ where $v = v_d$. In worst case scenario
+this would mean traversing the whole search space. We already saw however, that any
+given change can only affect mappings whose vertices are in the $d$th neighborhood
+$N_d(G, v_d)$ of $v_d$. Thus we can skip any branches that map a query graph vertex
+to a node $v \notin N_d(G, v_d)$.
+
+\begin{algorithm}[htp]
+    \SetAlgoLined\DontPrintSemicolon
+    \SetKwFunction{proc}{delete\_node}
+    \KwIn{$q, G, T_{q, G}, v_d$}
+    \nl $d \gets $ diameter($q$)\;
+    \nl $N_d(G, v_d) \gets$ $d$th neighborhood of $v_d$ in $G$\;
+    \SetKwProg{myproc}{Procedure}{}{}
+    \myproc{\proc{node, $v_d$}}{
+        \ForEach(){child $\in$ node.children}{
+            \nl $(u, v) \gets $ child.mapping\;
+            
+            \uIf{$v = v_d$}{
+                \nl node.remove(child)\;
+            }
+            \ElseIf(){$v \in N_d(G, v_d)$}{
+                \nl \proc{child, $v_d$}\;
+            }
+        }
+    }
+    \caption{Delete node incrementally}
+\end{algorithm}
+
+\subsection{Edge operations}
+
+In case of induced subgraph isomorphism, both inserting and deleting an edge can result 
+in loosing and gaining mappings. Removing an edge $e$ makes mappings where nodes of $e$
+were part of the mapping no longer valid. At the same time, in case of partial mappings
+where $e$ made it impossible to further extend, removing it may cause new mappings to
+appear. For example in \ref{fig:insdelmap}, as a result of removing the BD edge from $G$,
+$M(q_1, G')$ will loose all its mappings, while $M(q_2, G')$ will find a lot of mappings
+instead of none. 
+
+\begin{figure}[h]
+    \begin{subfigure}{.25\textwidth}
+      \centering
+      \begin {tikzpicture}[auto, node distance=2cm,thick,main node/.style={circle,draw}]
+        \node[main node] (A) {$A$};
+        \node[main node] (B) [below=of A] {$B$};
+        \node[main node] (C) [right =of B] {$C$};
+        \node[main node] (D) [right =of A] {$D$};    
+        \draw (A) -- (B);
+        \draw (B) -- (C);
+        \draw (C) -- (D);
+        \draw (D) -- (A);
+        \draw[red] (B) -- (D);    
+      \end{tikzpicture}
+      \caption{$G$}
+      \label{fig:sfig1}
+    \end{subfigure}%
+    \begin{subfigure}{.25\textwidth}
+      \centering
+      \begin {tikzpicture}[auto, node distance=2cm,thick,main node/.style={circle,draw}]
+        \node[main node] (A) {$1$};
+        \node[main node] (B) [below=of A] {$2$};
+        \node[main node] (C) [right =of B] {$3$};
+        \node[main node] (D) [right =of A] {$4$};    
+        \draw (A) -- (B);
+        \draw (B) -- (C);
+        \draw (C) -- (D);
+        \draw (D) -- (A);
+        \draw (B) -- (D);    
+      \end{tikzpicture}
+      \caption{$q_1$}
+      \label{fig:sfig2}
+    \end{subfigure}
+    \begin{subfigure}{.25\textwidth}
+        \centering
+        \begin {tikzpicture}[auto, node distance=2cm,main node/.style={circle,draw}]
+          \node[main node] (A) {$1$};
+          \node[main node] (B) [below=of A] {$2$};
+          \node[main node] (C) [right =of B] {$3$};
+          \node[main node] (D) [right =of A] {$4$};    
+          \draw (A) -- (B);
+          \draw (B) -- (C);
+          \draw (C) -- (D);
+          \draw (D) -- (A);
+        \end{tikzpicture}
+        \caption{$q_2$}
+        \label{fig:sfig3}
+    \end{subfigure}
+    \caption{plots of....}
+    \label{fig:insdelmap}
+\end{figure}
+
+The same goes for edge insertion. If we were to insert the BD edge into $G$ then
+$M(q_1, G')$ would find new mappings, while $M(q_2, G')$ should remove all of them.
+It is clear that these can happen simultaneously, as well.
+
+\subsubsection{Edge deletion}
+
+When an edge $e = (v_1, v_2)$ is removed from $G$, first, we have to prune the search
+tree to remove mappings that are no longer valid and we have to somehow find the new 
+mappings. We have to prune all branches that correspond to a partial mapping which both
+$v_1$ and $v_2$ are part of, and there is an edge between $m^{-1}(v_1)$ and $m^{-1}(v_2)$ 
+in $q$. We find all paths that correspond to such partial mappings, and prune them down
+from the first point where $v_1$ and $v_2$ both appeared in the path.
+
+\todo[inline]{example}
+
+Finding new mappings is somewhat harder because we have to extend the search tree instead
+of just pruning it. Because of the locality property of the incremental subgraph isomorphism
+problem, we know for sure that any new mappings that will appear have to contain either $v_1$
+or $v_2$ or both. Thus our job is reduced to look for partial mappings that contain either of 
+those two vertices. There are two kinds of partial mappings to consider. Typically, the search
+tree will contain some partial mappings that contain one of these two vertices but definitely
+not all of them. As a first step, we add these partial mappings to the search tree. We traverse 
+the tree and check if a node has a child that maps the next vertex $u \in q$ to $v_i$. If it does
+not, and $v_i$ was not covered already in the mapping, and it causes no conflicts between the 
+topology of the mapping and $q$ then we create a new child under the current node with 
+$m(u) = v_i$. Now that we have all the partial mappings containing $v_1$ or $v_2$ - note that not 
+all of them are expanded yet - we find all those leaves whose path from the root corresponds to a 
+partial mapping that contains $v_1$ or $v_2$ and we execute our choice of subgraph isomorphism 
+algorithm from that point. Naturally, these two steps can be combined into one traversal. If we 
+hit a node where (1) we can create a new child or (2) a node is a leaf and its path contains $v_1$ 
+or $v_2$, and it is not a complete mapping, we execute our subgraph isomorphism algorithm. We
+can speed up the algorithm by only considering those branches that contain vertices such that
+$\forall v \in m: v \in N_d(G, v_1) \cup N_d(G, v_2)$, i.e. branches that contain only mapped 
+vertices such that they are in the $d$th neighborhood of $e$.
+
+\begin{algorithm}[htp]
+    \SetAlgoLined\DontPrintSemicolon    
+    \SetKwFunction{prune}{prune}
+    \SetKwFunction{find}{find\_mappings}
+    \KwIn{$q, G, T_{q, G}, e$}
+    
+    \nl $d \gets $ diameter($q$)\;
+    \nl $(v_1, v_2) = e$\;
+    \nl $N_d(G, (v_1, v_2)) \gets$ $d$th neighborhood of $v_1$ and $v_2$ in $G$\;
+    \nl \prune(root($T_{q, G}$), $v_1, v_2$)\;
+    \nl \find(root($T_{q, G}$), $\{v_1, v_2\}$)\;
+    
+    \SetKwProg{pruneproc}{Procedure}{}{}
+    \pruneproc{\prune{node, $v_1$, $v_2$}}{
+        \nl $(u, v) = $ node.mapping\;
+        \uIf(){$v_1$ not marked as found $\wedge$ $v = v_1$}{
+            \nl mark $v_1$ as found\;
+        }
+        \ElseIf(){$v_2$ not marked as found $\wedge$ $v = v_2$}{
+            \nl mark $v_2$ as found\;
+        }
+
+        \If{$v_1$ is marked $\wedge$ $v_2$ is marked}{
+            \If{$(m^{-1}(v_1), m^{-1}(v_2)) \in E_q$}{
+                \nl \KwRet{true}\;
+            }
+        }
+
+        \nl $node.children = \{child \in node.children: \neg \prune(child, v_1, v_2) \}$\;     
+    }    
+    \SetKwProg{findproc}{Procedure}{}{}
+    \findproc{\find{node, forced\_candidates}}{
+        \uIf{node.depth $=$ $|V_q|$ $\lor$ node.mapping.v $\notin N_d(G, (v_1, v_2))$}{
+            \nl \KwRet{}\;
+        }        
+
+        \nl u $\gets$ node.extendable\_vertex\_of\_children\;
+        \ForEach(){$v_c \in forced\_candidates$}{
+            \uIf{$\nexists child: child.mapping = (u, v_c)$}{
+                \uIf(){$v_c$ is not covered $\wedge$ $v_c$ is good candidate}{
+                    \nl child = node.add\_child(u, $v_c$)\;
+                    \nl ISO(child)\;
+                }
+            }
+        }
+        
+        \uIf(){node is leaf $\land$ $(v_1 \in m \lor v_2 \in m)$}{
+            \nl ISO(node)\;
+        }
+        \Else{
+            \ForEach(){child $\in$ node.children}{
+                \nl \find(child, forced\_candidates)\;
+            }
+        }
+
+    }
+    \caption{Delete edge incrementally}
+\end{algorithm}
+
+
+
