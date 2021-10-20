@@ -127,6 +127,12 @@ to a node $v \notin N_d(G, v_d)$.
     \caption{Delete node incrementally}
 \end{algorithm}
 
+\subsection{Node insertion}
+
+Inserting a new node has no effects on mappings whatsoever because at the time of insertion,
+it cannot be part of any mappings because it has not connections. Thus inserting a new node
+needs no special care.
+
 \subsection{Edge operations}
 
 In case of induced subgraph isomorphism, both inserting and deleting an edge can result 
@@ -134,33 +140,35 @@ in loosing and gaining mappings. Removing an edge $e$ makes mappings where nodes
 were part of the mapping no longer valid. At the same time, in case of partial mappings
 where $e$ made it impossible to further extend, removing it may cause new mappings to
 appear. For example in \ref{fig:insdelmap}, as a result of removing the BD edge from $G$,
-$M(q_1, G')$ will loose all its mappings, while $M(q_2, G')$ will find a lot of mappings
-instead of none. 
+$M(q_1, G')$ will loose half of its mappings, while $M(q_2, G')$ will double the amount of
+its mappings. 
 
 \begin{figure}[h]
-    \begin{subfigure}{.25\textwidth}
+    \centering
+    \begin{subfigure}{.2\textwidth}
       \centering
-      \begin {tikzpicture}[auto, node distance=2cm,thick,main node/.style={circle,draw}]
-        \node[main node] (A) {$A$};
-        \node[main node] (B) [below=of A] {$B$};
-        \node[main node] (C) [right =of B] {$C$};
-        \node[main node] (D) [right =of A] {$D$};    
+      \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+        \node[main node] (A) {\scriptsize$A$};
+        \node[main node] (B) [below=of A] {\scriptsize$B$};
+        \node[main node] (C) [right =of B] {\scriptsize$C$};
+        \node[main node] (D) [right =of A] {\scriptsize$D$};    
         \draw (A) -- (B);
         \draw (B) -- (C);
         \draw (C) -- (D);
         \draw (D) -- (A);
+        \draw (A) -- (C);
         \draw[red] (B) -- (D);    
       \end{tikzpicture}
       \caption{$G$}
       \label{fig:sfig1}
     \end{subfigure}%
-    \begin{subfigure}{.25\textwidth}
+    \begin{subfigure}{.2\textwidth}
       \centering
-      \begin {tikzpicture}[auto, node distance=2cm,thick,main node/.style={circle,draw}]
-        \node[main node] (A) {$1$};
-        \node[main node] (B) [below=of A] {$2$};
-        \node[main node] (C) [right =of B] {$3$};
-        \node[main node] (D) [right =of A] {$4$};    
+      \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+        \node[main node] (A) {\scriptsize$1$};
+        \node[main node] (B) [below=of A] {\scriptsize$2$};
+        \node[main node] (C) [right =of B] {\scriptsize$3$};
+        \node[main node] (D) [right =of A] {\scriptsize$4$};    
         \draw (A) -- (B);
         \draw (B) -- (C);
         \draw (C) -- (D);
@@ -170,13 +178,13 @@ instead of none.
       \caption{$q_1$}
       \label{fig:sfig2}
     \end{subfigure}
-    \begin{subfigure}{.25\textwidth}
+    \begin{subfigure}{.2\textwidth}
         \centering
-        \begin {tikzpicture}[auto, node distance=2cm,main node/.style={circle,draw}]
-          \node[main node] (A) {$1$};
-          \node[main node] (B) [below=of A] {$2$};
-          \node[main node] (C) [right =of B] {$3$};
-          \node[main node] (D) [right =of A] {$4$};    
+        \begin {tikzpicture}[auto, node distance=1cm,main node/.style={circle,draw}]
+          \node[main node] (A) {\scriptsize $1$};
+          \node[main node] (B) [below=of A] {\scriptsize $2$};
+          \node[main node] (C) [right =of B] {\scriptsize $3$};
+          \node[main node] (D) [right =of A] {\scriptsize $4$};    
           \draw (A) -- (B);
           \draw (B) -- (C);
           \draw (C) -- (D);
@@ -185,13 +193,26 @@ instead of none.
         \caption{$q_2$}
         \label{fig:sfig3}
     \end{subfigure}
-    \caption{plots of....}
+    \begin{subfigure}{.2\textwidth}
+        \centering
+        \begin {tikzpicture}[auto, node distance=1cm,main node/.style={circle,draw}]
+          \node[main node] (A) {\scriptsize $1$};
+          \node[main node] (B) [below=of A] {\scriptsize $2$};
+          \node[main node] (C) [right =of B] {\scriptsize $3$};
+          \draw (A) -- (B);
+          \draw (B) -- (C);
+          \draw (C) -- (A);
+        \end{tikzpicture}
+        \caption{$q_2$}
+        \label{fig:sfig4}
+    \end{subfigure}
+    \caption{Example how mappings can appear and disappear in both cases of edge deletion and insertion.}
     \label{fig:insdelmap}
 \end{figure}
 
 The same goes for edge insertion. If we were to insert the BD edge into $G$ then
-$M(q_1, G')$ would find new mappings, while $M(q_2, G')$ should remove all of them.
-It is clear that these can happen simultaneously, as well.
+$M(q_1, G')$ would find new mappings, while $M(q_2, G')$ should remove the half 
+of them. It is clear that these can happen simultaneously, as well.
 
 \subsubsection{Edge deletion}
 
@@ -200,41 +221,12 @@ tree to remove mappings that are no longer valid and we have to somehow find the
 mappings. We have to prune all branches that correspond to a partial mapping which both
 $v_1$ and $v_2$ are part of, and there is an edge between $m^{-1}(v_1)$ and $m^{-1}(v_2)$ 
 in $q$. We find all paths that correspond to such partial mappings, and prune them down
-from the first point where $v_1$ and $v_2$ both appeared in the path.
-
-\todo[inline]{example}
-
-Finding new mappings is somewhat harder because we have to extend the search tree instead
-of just pruning it. Because of the locality property of the incremental subgraph isomorphism
-problem, we know for sure that any new mappings that will appear have to contain either $v_1$
-or $v_2$ or both. Thus our job is reduced to look for partial mappings that contain either of 
-those two vertices. There are two kinds of partial mappings to consider. Typically, the search
-tree will contain some partial mappings that contain one of these two vertices but definitely
-not all of them. As a first step, we add these partial mappings to the search tree. We traverse 
-the tree and check if a node has a child that maps the next vertex $u \in q$ to $v_i$. If it does
-not, and $v_i$ was not covered already in the mapping, and it causes no conflicts between the 
-topology of the mapping and $q$ then we create a new child under the current node with 
-$m(u) = v_i$. Now that we have all the partial mappings containing $v_1$ or $v_2$ - note that not 
-all of them are expanded yet - we find all those leaves whose path from the root corresponds to a 
-partial mapping that contains $v_1$ or $v_2$ and we execute our choice of subgraph isomorphism 
-algorithm from that point. Naturally, these two steps can be combined into one traversal. If we 
-hit a node where (1) we can create a new child or (2) a node is a leaf and its path contains $v_1$ 
-or $v_2$, and it is not a complete mapping, we execute our subgraph isomorphism algorithm. We
-can speed up the algorithm by only considering those branches that contain vertices such that
-$\forall v \in m: v \in N_d(G, v_1) \cup N_d(G, v_2)$, i.e. branches that contain only mapped 
-vertices such that they are in the $d$th neighborhood of $e$.
+from the first point where $v_1$ and $v_2$ both appeared in the path. \ref{alg:deledgeprune}
+shows the pruning algorithm when an edge was deleted.
 
 \begin{algorithm}[htp]
     \SetAlgoLined\DontPrintSemicolon    
     \SetKwFunction{prune}{prune}
-    \SetKwFunction{find}{find\_mappings}
-    \KwIn{$q, G, T_{q, G}, e$}
-    
-    \nl $d \gets $ diameter($q$)\;
-    \nl $(v_1, v_2) = e$\;
-    \nl $N_d(G, (v_1, v_2)) \gets$ $d$th neighborhood of $v_1$ and $v_2$ in $G$\;
-    \nl \prune(root($T_{q, G}$), $v_1, v_2$)\;
-    \nl \find(root($T_{q, G}$), $\{v_1, v_2\}$)\;
     
     \SetKwProg{pruneproc}{Procedure}{}{}
     \pruneproc{\prune{node, $v_1$, $v_2$}}{
@@ -254,6 +246,61 @@ vertices such that they are in the $d$th neighborhood of $e$.
 
         \nl $node.children = \{child \in node.children: \neg \prune(child, v_1, v_2) \}$\;     
     }    
+    \caption{Prune search tree on edge deletion}
+    \label{alg:deledgeprune}
+\end{algorithm}
+
+Fig \ref{fig:pruneex} shows an example partial search tree of $G$ and $q_3$ from Fig. \ref{fig:insdelmap}.
+The red nodes represent the pruned sub-branches as a result of removing the $BD$ edge from $G$.
+
+\begin{figure}[h]
+    \centering    
+    \begin {tikzpicture}[auto, node distance=1cm,main node/.style={circle,draw}]
+        \node[main node] (S) {\scriptsize $\emptyset, \emptyset$};
+        \node[main node] (R) [below=of S] {\scriptsize $1, B$};
+        \node[main node] (A) [below left=of R,red] {\scriptsize $2, D$};
+        \node[main node] (AA) [below left=of A,red] {\scriptsize $3, A$};    
+        \node[main node] (AB) [below right=of A,red] {\scriptsize $3, C$};    
+        \node[main node] (B) [below right=of R] {\scriptsize $2, A$};    
+        \node[main node] (BB) [below right=of B] {\scriptsize $3, C$};    
+        \draw (S) -- (R);
+        \draw (R) -- (A);
+        \draw (R) -- (B);
+        \draw (A) -- (AA);
+        \draw (A) -- (AB);        
+        \draw (B) -- (BB);
+    \end{tikzpicture}
+    \caption{Pruning of a partial search tree of $G$ and $q_3$ from Fig. \ref{fig:insdelmap}.}
+    \label{fig:pruneex}
+\end{figure}
+
+Finding new mappings is somewhat harder because we have to extend the search tree instead
+of just pruning it. Because of the locality property of the incremental subgraph isomorphism
+problem, we know for sure that any new mappings that will appear have to contain either $v_1$
+or $v_2$ or both. Thus our job is reduced to look for partial mappings that contain either of 
+those two vertices. There are two kinds of partial mappings to consider. Typically, the search
+tree will contain some partial mappings that contain one of these two vertices but definitely
+not all of them. As a first step, we add these partial mappings to the search tree. We traverse 
+the tree and check if a node has a child that maps the next vertex $u \in q$ to $v_i$. If it does
+not, and $v_i$ was not covered already in the mapping, and it causes no conflicts between the 
+topology of the mapping and $q$ then we create a new child under the current node with 
+$m(u) = v_i$. Now that we have all the partial mappings containing $v_1$ or $v_2$ - note that not 
+all of them are expanded yet - we find all those leaves whose path from the root corresponds to a 
+partial mapping that contains $v_1$ or $v_2$ and we execute our choice of subgraph isomorphism 
+algorithm from that point. Naturally, these two steps can be combined into one traversal. If we 
+hit a node where (1) we can create a new child or (2) a node is a leaf and its path contains $v_1$ 
+or $v_2$, and it is not a complete mapping, we execute our subgraph isomorphism algorithm. We
+can speed up the algorithm by only considering those branches that contain vertices such that
+$\forall v \in m: v \in N_d(G, v_1) \cup N_d(G, v_2)$, i.e. branches that contain only mapped 
+vertices such that they are in the $d$th neighborhood of $e$. Alg. \ref{alg:deledgefind}
+formally describes the algorithm of finding new mappings after an edge has been deleted, and
+Alg. \ref{alg:deledge} shows the incremental algorithm for subgraph isomorphism in case of edge 
+deletion.
+
+\begin{algorithm}[ht]
+    \SetAlgoLined\DontPrintSemicolon    
+    \SetKwFunction{find}{find\_mappings}
+    
     \SetKwProg{findproc}{Procedure}{}{}
     \findproc{\find{node, forced\_candidates}}{
         \uIf{node.depth $=$ $|V_q|$ $\lor$ node.mapping.v $\notin N_d(G, (v_1, v_2))$}{
@@ -279,9 +326,65 @@ vertices such that they are in the $d$th neighborhood of $e$.
             }
         }
 
-    }
+    }        
+    \caption{Find new mappings incrementally}
+    \label{alg:deledgefind}
+\end{algorithm}
+
+\begin{algorithm}[ht]
+    \SetAlgoLined\DontPrintSemicolon    
+    \SetKwFunction{prune}{prune}
+    \SetKwFunction{find}{find\_mappings}
+    \KwIn{$q, G, T_{q, G}, e$}
+    
+    \nl $d \gets $ diameter($q$)\;
+    \nl $(v_1, v_2) = e$\;
+    \nl $N_d(G, (v_1, v_2)) \gets$ $d$th neighborhood of $v_1$ and $v_2$ in $G$\;
+    \nl \prune(root($T_{q, G}$), $v_1, v_2$)\;
+    \nl \find(root($T_{q, G}$), $\{v_1, v_2\}$)\;    
+    
     \caption{Delete edge incrementally}
+    \label{alg:deledge}
 \end{algorithm}
 
 
+\subsubsection{Edge insertion}
 
+Inserting a new edge into $G$ will have a really similar effect on the mappings as and edge
+deletion. Mappings can both appear and disappear from the original mapping set. In fact, the
+algorithm described above is almost applicable to this problem out of the box. It is clear 
+that finding new mappings will be the same in this case, as well. We have to take care about
+how we prune the search tree before that. Indeed, removing nodes that pass the test 
+$(m^{-1}(v_1), m^{-1}(v_2)) \in E_q$ makes no sense because we just added that new edge. We
+can make this condition generic however, so that both edge operations can use the same predicate.
+Instead of separating the two cases, we will simply check that an edge between $v_1$ and $v_2$
+in $G$ exists if and only if an edge between $m^{-1}(v_1)$ and $m^{-1}(v_2)$ in $q$ exists.
+With these modifications, the final pruning algorithm can be found in Alg. \ref{alg:edgeprune}.
+
+\begin{algorithm}[ht]
+    \SetAlgoLined\DontPrintSemicolon    
+    \SetKwFunction{prune}{prune}
+    
+    \SetKwProg{pruneproc}{Procedure}{}{}
+    \pruneproc{\prune{node, $v_1$, $v_2$}}{
+        \nl $(u, v) = $ node.mapping\;
+        \uIf(){$v_1$ not marked as found $\wedge$ $v = v_1$}{
+            \nl mark $v_1$ as found\;
+        }
+        \ElseIf(){$v_2$ not marked as found $\wedge$ $v = v_2$}{
+            \nl mark $v_2$ as found\;
+        }
+
+        \If{$v_1$ is marked $\wedge$ $v_2$ is marked}{
+            \nl is\_edge\_in\_q $\gets$ $(m^{-1}(v_1), m^{-1}(v_2)) \in E_q$\;
+            \nl is\_edge\_in\_G $\gets$ $(v_1, v_2) \in E_G$\;
+            \If{is\_edge\_in\_q $\neq$ is\_edge\_in\_G}{
+                \nl \KwRet{true}\;
+            }
+        }
+
+        \nl $node.children = \{child \in node.children: \neg \prune(child, v_1, v_2) \}$\;     
+    }    
+    \caption{Prune search tree on edge operation}
+    \label{alg:edgeprune}
+\end{algorithm}

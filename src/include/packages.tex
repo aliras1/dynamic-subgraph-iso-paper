@@ -68,5 +68,13 @@
 
 \usepackage[colorinlistoftodos,prependcaption,textsize=tiny]{todonotes}
 
+\usepackage{tikz-qtree-compat}
 \usepackage{tikz}
+\usetikzlibrary{shapes.misc}
+\usetikzlibrary{decorations.markings}
+\usetikzlibrary{positioning}
+\tikzset{cross/.style={cross out, draw, 
+         minimum size=2*(#1-\pgflinewidth), 
+         inner sep=0pt, outer sep=0pt}}
+
 \usepackage{subcaption}
