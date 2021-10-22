@@ -61,27 +61,34 @@ algorithm.
 This chapter describes our method of making the previously introduced algorithms
 incremental. One way or another, both algorithms traverse a search tree eventually.
 In both cases the search tree is purely abstract, it has no physical manifestation
-in the memory whatsoever. We propose to store the traversed search tree while running
-subgraph isomorphism initially, and make use of it in future updates. $T_{q, G}$ is a
-search tree of query graph $q$ and data graph $G$, where paths from the root to a leaf
+in the memory. It is only a concept for depicting the recursive paths an algorithm
+traverses during its matching process, allowing us to analyze the search space of a
+given solution.
+
+\subsection{Search tree}
+
+We propose to store the traversed search tree while running a subgraph isomorphism 
+algorithm initially, and make use of it in future updates. $T_{q, G}$ is a search 
+tree of query graph $q$ and data graph $G$, where paths from the root to a leaf 
 correspond to (partial) mappings, and a node contains an $(u, v)$ pair where 
 $u \in V_q, v \in V_G$ denotes a single vertex mapping. The root $r$ of $T_{q, G}$
 contains an empty mapping. A root-to-leaf path, whose length $l = |V_q|$ is a complete
 mapping because it maps all nodes of $q$. The rest of the root-to-leaf paths correspond
 to partial mappings.
 
-In a typical scenario at the end of an execution of a subgraph isomorphism algorithm,
+In a typical scenario, at the end of an execution of a subgraph isomorphism algorithm,
 the search tree contains some complete mappings and orders of magnitude more partial 
-mappings that for some reason could not be extended any further. These partial mappings 
-play a crucial role in the incremental version. One can think about them as potential 
-partially precalculated mappings. The reason, why a partial mapping could not be extended
-is because the algorithm ran out of valid candidates in the area of the mapped nodes' 
-neighborhood in \(G\). This is caused because by some kind of conflict between the 
-topology of \(q\) and the topology of the mapped nodes and their neighborhood. These 
-conflicts could be resolved when a new edge is added to or an old one is deleted from 
-\(G\). At this point, having these partial mappings in memory can speed up the process 
-of removing  matches that became obsolete and finding new ones that were impossible in 
-the past.
+mappings that could not be extended any further. These partial mappings play a crucial 
+role in the incremental version. One can think about them as potential partially 
+pre-calculated mappings. The reason, why a partial mapping could not be extended is 
+because the algorithm ran out of valid candidates in the area of the mapped nodes' 
+neighborhood in \(G\). This is caused by a conflict between the topology of \(q\) and 
+the topology of the mapped nodes and their neighborhood. I.e. there was no more vertices 
+left such that the mapping obtained by extending the current partial mapping with it would 
+remain a partial subgraph isomorphism. These conflicts could be resolved when a new edge is 
+added to or an old one is deleted from \(G\). At this point, having these partial mappings 
+in memory can speed up the process of removing  matches that became obsolete and finding new 
+ones that were impossible in the past.
 
 In the upcoming sections, we define an incremental algorithm for each type of graph 
 modifications.

@@ -103,13 +103,28 @@ measurements.
     mappings found by an arbitrary subgraph isomorphism algorithm.
 \end{definition}
 
+\begin{definition}
+    An injection $m : D \rightarrow V_G$ is called a (partial) mapping, where $D \subseteq V_q$.
+\end{definition}
+
+\begin{definition}
+    $m_q$ and $m_G$ denotes the domain and the range of m respectively.
+\end{definition}
+
+\begin{definition}
+    A mapping $m$ covers a node $u \in V_q \cup V_G$ if $u \in m_q \cup m_G$.
+\end{definition}
+
+\begin{definition}
+    A mapping $m$ is a whole mapping if it covers all the nodes of $V_q$.
+\end{definition}
 
 
-This paper concentrates on the (induced) subgraph isomorphism problem in dynamic
-graphs, i.e. graphs that change with time. After finding the initial matches given a
-query graph \(q\) and a data graph \(G\), keep the set of matches up to date in response
-to small updates \(\Delta G \) on \(G\) without recomputing all matches from scratch.
-\(\Delta G\) can be one of the following operations:
+This paper concentrates on the induced subgraph isomorphism problem in dynamic graphs, 
+i.e. graphs that change with time. After finding the initial matches given a query graph
+\(q\) and a data graph \(G\), keep the set of matches up to date in response to small 
+updates \(\Delta G \) on \(G\) without recomputing all matches from scratch. \(\Delta G\) 
+can be one of the following operations:
 \begin{itemize}
     \item add a new node to \(G\),
     \item remove an existing node from \(G\),
@@ -122,6 +137,157 @@ to small updates \(\Delta G \) on \(G\) without recomputing all matches from scr
 This section gives a brief overview on how the two algorithms of interest (DAF and VF2++)
 work.
 
+\subsection{VF2}
+
+Since VF2++ is an extension over VF2, first, we describe how VF2 works. It is a recursive 
+algorithm where each state of the matching process can be associated with a partial mapping
+$m$. VF2 starts with an empty mapping \todo{describe mappings in a section above this one} and it 
+gradually extends it until a whole mapping is reached. For the current mapping $m$, it calculates a 
+candidate set of $(u, v)$ pairs to be included in $m$. It iterates over the
+$(u, v)$ elements of the candidate set, and if $\mathcal{F}(m, (u, v))$ is feasible then it recursively 
+tries to extend $m'$, where $\mathcal{F}$ is the feasibility function and $m'$ is a partial mapping
+obtained by adding $(u, v)$ to $m$.
+
+\begin{definition}
+    Let $m$ be a mapping. $Cons(m, (u, v))$ is a logical consistency function which is true if and only if $m$
+    satisfies the requirements of induced subgraph isomorphism considering $q_m$ and $G_m$, where
+    $q_m$ and $G_m$ are the subgraphs of $q$ and $G$ induced by $m_q$ and $m_G$
+    respectively. $Cons$ is used to verify that the consistency of $m$ also holds after extended with $(u, v)$.
+\end{definition}
+
+\begin{definition}
+    Let $m$ be a mapping. $Cut(m)$ is a logical cutting function which is false if there exists a 
+    sequence of extensions of $m$ for which the resulting mapping is whole and it satisfies the
+    requirements of induced subgraph isomorphism. $Cut$ is used to determine if the current partial 
+    mapping is not contained in any whole mapping, thus trying to extend it would be useless.
+\end{definition}
+
+\begin{definition}
+    The feasibility function $\mathcal{F}$ is defined as follows: 
+    
+    $\mathcal{F}(m, (u, v)) = Cons(m, (u, v)) \land \neg Cut(m)$.
+\end{definition}
+
+The feasibility function ensures that the algorithm considers only $(u, v)$ candidates such that 
+$m$ extended with $(u, v)$ remains consistent, and it eliminates the need of processing partial
+mappings for which it can be proven that they cannot be extended to a whole mapping.
+
+\begin{algorithm}[h]
+    \SetAlgoLined\DontPrintSemicolon
+    \SetKwFunction{proc}{vf2}
+    \SetKwProg{myproc}{Procedure}{}{}
+    \myproc{\proc{m}}{
+        \uIf(){$m$ covers $V_q$}{
+            \nl Output(m)\;
+        }
+        \Else{
+            \nl $P_m$ $\gets$ the candidate set of pairs for extending $m$\;
+            \ForEach(){$(u, v) \in P_m$}{
+                \uIf(){$\mathcal{F}(m, (u, v))$}{
+                    \nl \proc(extend($m, (u,v)$))\;
+                }
+            }
+        }        
+    }
+    \caption{VF2 algorithm}
+\end{algorithm}
+
+Let $T_q(m) := {u \in V_q \ m_q: \exists u' \in m_q: (u, u') \in E_q}$, and
+$T_G(m) := {v \in V_G \ m_G: \exists v' \in m_G: (v, v') \in E_G}$.
+
+The candidate set for extending $m$ is $P_m$. $P_m$ consists of the pairs of uncovered neighbors
+of covered nodes. If there exists no such pair, $P_m$ contains all uncovered nodes. Formally,
+
+\[
+    P_m = 
+\begin{cases}
+    T_q(m) \times T_G(m),& \text{if} T_q(m) \neq \emptyset \text{and} T_G(m) \neq \emptyset\\
+    (V_q \setminus m_q) \times (V_G \setminus m_G),  & \text{otherwise}.
+\end{cases}    
+\]
+
+
 \subsection{VF2++}
+
+VF2++ \todo{cite} was published by Alp\'{a}r J\"{u}ttner and P\'{e}ter Madarasi in 2018.
+The algorithm makes performance improvements compared to VF2 by calculating a matching
+order, in which the vertices of $q$ are processed in a partial mapping, and by applying
+a more efficient cutting function.
+
+The order of the nodes of $q$ to be matched have a huge impact on the number of visited
+states. In case of VF2, the lack of strictly defined matching order can lead to evaluating
+states that cannot be wholly extended, only to realize this deep down on the search tree.
+By choosing a proper matching order, one can eliminate such unnecessary computations earlier.
+
+\todo{example}
+
+The first step of VF2++ is determining the matching order in which the algorithm will process
+the vertices of the query graph $q$. During the order's computation, VF2++ takes into account
+the structure of $q$ and its labeling. First, it chooses a node with the least common label 
+and with the largest degree. This node will be the root of a tree, which will be used to determine
+the final matching order $\mathcal{O}$.
+
+
+\[ root = {r | r \in \argmax_{deg}(\argmin_{label_{\mathcal{O}}}(V_q \setminus \mathcal{O}))} \]
+, where $label_{\mathcal{O}}(n) := |{v \in V_G : \mathcal{L}(n) = \mathcal{L}(v)}| - |{u \in \mathcal{O}: \mathcal{L}(n) = \mathcal{L}(u)}|$, 
+i.e. it computes the difference between the number of vertices in $G$ with the label of $n$ and 
+the number of vertices in $\mathcal{O}$ with the label of $n$. Next, the algorithm computes a tree 
+$T$ by traversing $q$ in BFS (Breadth first search) order from the previously calculated root, and
+it processes each level of $T$ the following way. Let $V_{q,d}$ denote the set of vertices of $T$ in
+depth $d$. The process selects the vertices with the largest connectivity respect to $\mathcal{O}$,
+i.e. those nodes whose number of neighbors that are already in $\mathcal{O}$ is the largest. Then
+from these nodes, it selects the ones with the largest degree, then those with the rarest label.
+
+\[ o = {u | u \in \argmin_{label_{\mathcal{O}}}(\argmax_{deg}(\argmax_{conn}(V_{q,d})))} \]
+
+The selected node $o$ is appended to $\mathcal{O}$, and it is removed from $V_{q,d}$. This continues 
+until $V_{q,d}$ has no more elements. Algorithm \ref{alg:vf2pporder} and \ref{alg:vf2ppproc} describe
+the matching order procedures on a high level.
+
+\begin{algorithm}[h]
+    \SetAlgoLined\DontPrintSemicolon
+    \SetKwFunction{proc}{vf2\_order}
+    \SetKwFunction{process}{process}
+    \SetKwProg{myproc}{Procedure}{}{}
+    \myproc{\proc{}}{
+        \nl $\mathcal{O} := \emptyset$\;
+        \While(){$V_q \setminus \mathcal{O} \neq \emptyset$}{
+            \nl $r \in \argmax_{deg}(\argmin_{label_{\mathcal{O}}}(V_q \setminus \mathcal{O}))$\;
+            \nl $T$ $\gets$ \text{BFS}$(r)$\;
+            \ForEach(){$d = 0,1,\cdots depth(T)$}{
+                \nl $V_{q,d} := $ \text{nodes of the} $d$\text{-th level}\;
+                \nl \process{$V_q,d$}\;
+            }
+        }           
+    }
+    \label{alg:vf2pporder}
+    \caption{VF2++ order}
+\end{algorithm}
+
+\begin{algorithm}[h]
+    \SetAlgoLined\DontPrintSemicolon
+    \SetKwFunction{proc}{process}
+    \SetKwProg{myproc}{Procedure}{}{}
+    \myproc{\proc{$V_{q,d}$}}{
+        \While(){$V_{q,d} \neq \emptyset$}{
+            \nl $o \in \argmin_{label_{\mathcal{O}}}(\argmax_{deg}(\argmax_{conn}(V_{q,d})))$\;
+            \nl $V_{q,d}$ $\gets$ $V_{q,d} \setminus o$\;
+            \nl $\mathcal{O}$.append($o$)\;
+        }        
+    }
+    \label{alg:vf2ppproc}
+    \caption{VF2++ process the d-th level of $T$}
+\end{algorithm}
+
+VF2++'s additional changes to the original include a refined way of determining the candidates
+of $u \in V_q$ and applying cutting rules on them. In this version, $u \in q$'s candidates will be 
+$v \in G$ that are in the neighborhood of $m_G$, are not covered yet and are consistent with $m$.
+
+\[ P_m(u) = {v \in G | \neg covered_m(v) \land \forall u' \in q: (u, u') \in E_q \land u' \in m_q \iff (v, m(u')) \in E_G}  \]
+
+VF2++ also introduces a new cutting rule which verifies that for a given candidate pair $(u, v)$,
+$v$ in $G$ has at least as many neighbors with the appropriate labels as $u$ in $q$.
+
+\todo{example}
 
 \subsubsection{DAF}
