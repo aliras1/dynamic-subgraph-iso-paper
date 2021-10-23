@@ -1,11 +1,13 @@
 \chapter{Implementation}
 
-All algorithms were written in Python. To evaluate the correctness of our work, two already 
-existing induced subgraph isomorphism implementations were used: networkx's (Python graph 
-library) isomorphism module and boost c++ library's vf2\_subgraph\_iso\ module. Both modules
-implement VF2.
-
-\section{DAF}
-
-While implementing DAF, we chose the candidate-size matching order because it was the faster
-option to evaluate.
+All algorithms were written in Python. Although Python is not necessarily the right tool 
+for implementing high performance algorithms, the main goal of this work was to verify if
+we can make significant improvements compared to running VF2++/DAF from scratch by computing
+mappings incrementally. To evaluate the correctness of our work, two already existing induced 
+subgraph isomorphism implementations were used: networkx's (Python graph library) isomorphism 
+module and boost c++ library's vf2\_subgraph\_iso\ module. Both modules implement VF2. We 
+tried to compare the performance against the original VF2++ implementation (https://lemon.cs.elte.hu/trac/lemon/log/lemon/lemon/vf2pp.h?rev=1433)
+however it did not produce the same results as the selected baseline implementations. We also
+wanted to compare our results to the original DAF implementation, however no sources for the
+project were available at time of writing, only a set of pre-compiled binaries (https://github.com/SNUCSE-CTA/DAF)
+which we did not want to run in the end.

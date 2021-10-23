@@ -219,7 +219,21 @@ states. In case of VF2, the lack of strictly defined matching order can lead to 
 states that cannot be wholly extended, only to realize this deep down on the search tree.
 By choosing a proper matching order, one can eliminate such unnecessary computations earlier.
 
-\todo{example}
+\begin{example}
+    The following example was taken from the original VF2++ paper. Let $q$ be a query graph 
+    that cannot be mapped to $G$, and $u \in V_q$. Let 
+    $q' := V_q \cup \{u'_1, u'_2,\cdots,u'_k\}, E_q \cup \{ (u, u'_1),(u'_1, u'_2),\cdots,(u'_{k-1}, u'_k) \}$,
+    i.e. $q'$ is the same graph as $q$ which was extended with a $k$ long path, which is disjoint
+    from $q$ and one of its starting nodes is connected to $u \in V_q$.
+
+    If the first $k$ vertices in the matching order were the nodes of the newly added path,
+    VF2 would iterate through all possible $k$ long paths in $G$, only to realize that no
+    partial mappings can be extended to $q'$.
+
+    However, if it started the matching process with vertices from $q$, it would not have
+    matched any nodes from the path.
+\end{example}
+
 
 The first step of VF2++ is determining the matching order in which the algorithm will process
 the vertices of the query graph $q$. During the order's computation, VF2++ takes into account
@@ -279,6 +293,93 @@ the matching order procedures on a high level.
     \caption{VF2++ process the d-th level of $T$}
 \end{algorithm}
 
+\begin{example}\label{ex:vf2pporder}
+    Let $q$ and $G$ be the graphs from figure \ref{fig:orderex}. 
+    
+    \begin{figure}[h!]
+        \centering
+        \begin{subfigure}{.4\textwidth}
+          \centering
+          \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+            \node[main node,label={\scriptsize A}] (A) {\scriptsize$u_1$};
+            \node[main node,label={\scriptsize B}] (B) [below left=of A] {\scriptsize$u_3$};
+            \node[main node,label={\scriptsize C}] (C) [below right =of A] {\scriptsize$u_2$};
+            \node[main node,label={\scriptsize B}] (D) [above right =of C] {\scriptsize$u_4$};    
+            \draw (A) -- (B);
+            \draw (B) -- (C);
+            \draw (C) -- (A);
+            \draw (C) -- (D);
+          \end{tikzpicture}
+          \caption{$q$}
+          \label{fig:orderexq}
+        \end{subfigure}%
+        \begin{subfigure}{.4\textwidth}
+          \centering
+          \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+            \node[main node] (1) {\scriptsize$v_1$};
+            \node[main node] (2) [below=of 1] {\scriptsize$v_2$};
+            \node[main node] (3) [below right =of 2] {\scriptsize$v_3$};
+            \node[main node] (4) [right =of 2] {\scriptsize$v_4$};    
+            \node[main node] (5) [right =of 3] {\scriptsize$v_5$};    
+            \node[main node] (6) [right =of 4] {\scriptsize$v_6$};    
+            \draw (1) -- (2);
+            \draw (2) -- (4);
+            \draw (2) -- (3);
+            \draw (3) -- (4);
+            \draw (3) -- (5);    
+            \draw (4) -- (5);  
+            \draw (5) -- (6);      
+          \end{tikzpicture}
+          \caption{$G$}
+          \label{fig:orderexg}
+        \end{subfigure}    
+        \caption{Graphs for VF2++ order example}
+        \label{fig:orderex}
+    \end{figure}
+    
+    We want to compute the matching order
+    of $q$. To select the root node for our BFS tree $T$, we need the least frequent labels. In this example,
+    all labels are assigned twice, which means that our root candidates are still $u_1, u_2, u_3, u_4$.
+    From these vertices, the vertex with the largest degree is $u_2$, thus it will be the root of $T$.
+    The resulting tree from traversing $q$ in BFS order can be seen in figure \ref{fig:vf2pporderbfs}.
+
+    \begin{figure}[h!]
+        \centering
+        \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+            \node[main node] (2) {\scriptsize$u_2$};
+            \node[main node] (3) [below left=of 2] {\scriptsize$u_3$};
+            \node[main node] (1) [below =of 2] {\scriptsize$u_1$};
+            \node[main node] (4) [below right=of 2] {\scriptsize$u_4$};
+            \draw (2) -- (3);
+            \draw (2) -- (1);
+            \draw (2) -- (4);
+          \end{tikzpicture}
+        \caption{BFS tree of $q$ from $u_2$}
+        \label{fig:vf2pporderbfs}
+    \end{figure}
+
+    Processing $T$ begins with the 0-th level. On this level, the node with the largest connectivity,
+    with the largest degree and with the most infrequent label is $u_2$ because it is the only vertex.
+    $u_2$ is appended to the order $\mathcal{O}$ and since there is no other nodes left, we move on to
+    the next level. Here, all vertices have the same connectivity because all nodes are adjacent to $u_2$.
+    The nodes with the largest degree are $u_1$ and $u_3$, both of them have a degree of 2. Neither of
+    the vertices share the same label as the only vertex in the order, thus their label's frequencies are    
+    to be considered. In this case both of them are equally frequent with a frequency of 2. We have to
+    choose one from them, let $u_1$ be the new node to add to $\mathcal{O}$. Since there are two more
+    remaining vertices on the level, we stay on the 1st level. This time, the node with the largest
+    connectivity is $u_3$ because it is adjacent to $u_1$ and $u_2$, while $u_4$ is only adjacent to $u_2$.
+    $u_3$ is added to $\mathcal{O}$. The only vertex left on the first level is $u_4$, thus it is finally
+    appended to the order. All $u \in V_q$ is added to the order and the procedure stops. The final order
+    is the following:
+
+    \[ \mathcal{O} = \{u_2, u_1, u_3, u_4\} \]
+
+\end{example}
+
+
+
+
+
 VF2++'s additional changes to the original include a refined way of determining the candidates
 of $u \in V_q$ and applying cutting rules on them. In this version, $u \in q$'s candidates will be 
 $v \in G$ that are in the neighborhood of $m_G$, are not covered yet and are consistent with $m$.
@@ -290,7 +391,7 @@ $v$ in $G$ has at least as many neighbors with the appropriate labels as $u$ in 
 
 Summarizing the two extensions made over VF2, the final VF2++ algorithm is defined in Alg. \ref{alg:vf2pp}.
 
-\begin{algorithm}[h]
+\begin{algorithm}[h!]
     \SetAlgoLined\DontPrintSemicolon
     \SetKwFunction{vfpp}{vf2pp}
     \SetKwFunction{order}{order}
@@ -319,7 +420,42 @@ Summarizing the two extensions made over VF2, the final VF2++ algorithm is defin
 \end{algorithm}
 
 
-\todo{example}
+\begin{example}
+    Let us continue our example started in \ref{ex:vf2pporder}. As a reminder, the matching order is
+    $\mathcal{O} = \{u_2, u_1, u_3, u_4\}$. Now we have to find all mappings of $q$ in $G$. VF2++ starts
+    with an empty mapping. The next vertex to match according to $\mathcal{O}$ is $u_2$. Since it is
+    the first node in the mapping, its candidates will be the set of all nodes $v_j \in V_G$. $u_2$ has
+    three neighbors. Two with label $B$ and one with label $A$. Now we can check the feasibility of our
+    candidates.
+
+    \begin{itemize}
+        \item $v_1$ has one neighbor with label $A$, thus $(u_2, v_1)$ is infeasible.
+        \item $v_2$ has three neighbors, one with label $A$, one with label $B$ and one with label $C$. It is short on neighbors with label $B$, thus $(u_2, v_2)$ is also infeasible.
+        \item $v_3$ has two neighbors with label $A$ and two with label $C$, which means $(u_2, v_3)$ is once again infeasible.
+        \item $v_4$ has also not enough neighbors with label $B$, which makes $(u_2, v_4)$ infeasible.
+        \item $v_5$ has one neighbor with label $A$ and two neighbors with label $B$ which means $(u_2, v_5)$ is feasible, thus we extend our empty mapping with this pair.
+    \end{itemize}
+
+    \begin{figure}[h!]
+        \centering
+        \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+            \node[main node] (0) {\scriptsize$\emptyset, \emptyset$};
+            \node[main node, red,inner sep=0pt] (23) [below left=of 0] {\scriptsize$u_2,v_3$};
+            \node[main node, red,inner sep=0pt] (24) [below right=of 0] {\scriptsize$u_2,v_4$};
+            \node[main node, red,inner sep=0pt] (22) [left=of 23] {\scriptsize$u_2, v_2$};
+            \node[main node, red,inner sep=0pt] (21) [left=of 22] {\scriptsize$u_2, v_1$};
+            \node[main node,inner sep=0pt] (25) [right=of 24] {\scriptsize$u_2, v_5$};            
+            \draw (0) -- (21);
+            \draw (0) -- (22);
+            \draw (0) -- (23);
+            \draw (0) -- (24);
+            \draw (0) -- (25);
+          \end{tikzpicture}
+        \caption{First level of a VF2++ search tree}
+        \label{fig:vf2ppfirst}
+    \end{figure}
+
+\end{example}
 
 \subsection{DAF}
 
