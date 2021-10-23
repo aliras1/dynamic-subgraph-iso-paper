@@ -286,8 +286,177 @@ $v \in G$ that are in the neighborhood of $m_G$, are not covered yet and are con
 \[ P_m(u) = {v \in G | \neg covered_m(v) \land \forall u' \in q: (u, u') \in E_q \land u' \in m_q \iff (v, m(u')) \in E_G}  \]
 
 VF2++ also introduces a new cutting rule which verifies that for a given candidate pair $(u, v)$,
-$v$ in $G$ has at least as many neighbors with the appropriate labels as $u$ in $q$.
+$v$ in $G$ has at least as many neighbors with the appropriate labels as $u$ in $q$. 
+
+Summarizing the two extensions made over VF2, the final VF2++ algorithm is defined in Alg. \ref{alg:vf2pp}.
+
+\begin{algorithm}[h]
+    \SetAlgoLined\DontPrintSemicolon
+    \SetKwFunction{vfpp}{vf2pp}
+    \SetKwFunction{order}{order}
+    \SetKwFunction{match}{match}
+    \SetKwProg{myproc}{Procedure}{}{}
+    \myproc{\vfpp{$q, G$}}{
+        \nl $\mathcal{O}$ $\gets$ \order{}\;
+        \nl \match{$\emptyset, 0$}\;   
+    }
+    \myproc{\match{$m, depth$}}{
+        \uIf(){$m$ covers $V_q$}{
+            \nl Output(m)\;
+        }
+        \Else{
+            \nl $u$ $\gets$ $\mathcal{O}[d]$\;
+            \nl $P_m(u) = {v \in G | \neg covered_m(v) \land \forall u' \in q: (u, u') \in E_q \land u' \in m_q \iff (v, m(u')) \in E_G}$\;
+            \ForEach(){$(u, v) \in P_m$}{
+                \uIf(){$\mathcal{F}(m, (u, v))$}{
+                    \nl \match(extend($m, (u,v)$), $d+1$)\;
+                }
+            }
+        }        
+    }
+    \label{alg:vf2pp}
+    \caption{VF2++ algorithm}
+\end{algorithm}
+
 
 \todo{example}
 
-\subsubsection{DAF}
+\subsection{DAF}
+
+DAF was originally introduced in \todo{cite}. The algorithm converts the input graphs $q$ and $G$ 
+into its own special data structure which is computed by (D)dynamic programming. It also uses an 
+(A)adaptive matching order and (F)failing sets, hence the name, DAF.
+
+As a first step, DAF creates its own data structures from $q$ and $G$, called \emph{candidate space} ($CS$).
+Then DAF searches mappings in $CS$ with a backtracking algorithm in which the matching order is adaptive.
+Furthermore, it uses failing sets in order to prune the parts of the search space for which it can be
+proven that they contain no whole mappings. Algorithm \ref{alg:daf} shows a high level description of DAF.
+
+\begin{algorithm}[h]
+    \SetAlgoLined\DontPrintSemicolon
+    \KwIn{q, G}
+    \KwOut{all mappings}
+    \nl $q_D$ $\gets$ $build\_dag(q, G)$\;
+    \nl $CS$ $\gets$ $build\_cs(q, q_D, G)$\;
+    \nl $M$ $\gets$ $\emptyset$\;
+    \nl $backtrack(q, q_D, CS, M)$\;
+    \label{alg:daf}
+    \caption{DAF}
+\end{algorithm}
+
+\subsubsection{Build DAG}
+
+DAF creates a DAG (directed acyclic graph) $q_D$ from $q$. $q_D$ will be used for computing $CS$, and later
+for computing the matching order adaptively. For each node $u \in q$, let the initial candidate set be:
+
+\[ C_{ini}(u) = {v | v \in V_G \land deg_G(v) \geq deg_q(u) \land \mathcal{L}_q(u) = \mathcal{L}_G(v)} \]
+
+, i.e. those $v \in G$ vertices with the same label as $u$ in $q$ whose degree is also greater than or 
+equal to the degree of $u$. Now that the initial candidates are computed, we define the root of $q_d$
+and the first vertex to be matched as
+
+\[ r \in \argmin \frac{|C_{ini}(u)|}{deg_q(u)} \], where $u \in V_q$. The lesser this quotient is the 
+lesser candidates $u$ will have and since it has a large degree, it will have more topological constraints 
+then others, thus the algorithm can prune more branches.
+
+Starting from $r$, DAF traverses $q$ in BFS order and it directs all edges in $q_D$ from upper levels to
+lower levels. I.e. given an undirected edge $e = (u, v) \in E_q$, the resulting edge in $q_D$ will have
+a direction of $u \rightarrow v$, if $depth(u, BFS_q(r)) \geq depth(v, BFS_q(r))$, otherwise the direction
+will be $u \leftarrow v$. Nodes on the same level of the BFS tree are sorted by how infrequent their labels
+are and by their degrees in descending order. The direction of an edge between nodes on the same level is 
+determined by previously described order. After $q_D$ is computed, it is used to create another DAG $q^{-1}_D$
+which is the same as $q_D$ but the direction of its edges are reversed.
+
+The next step is to build the candidate space structure $CS$.
+
+\subsubsection{Build CS}
+
+Given a query graph $q$ and a data graph $G$, a CS structure built from $q$ and $G$ contains candidates $C(u)$
+for all $u \in q$ such that
+
+\begin{enumerate}
+    \item $\forall u \in V_q : \exists$ a candidate set $C(u) \subseteq C_{ini}(u)$, and
+    \item there is an edge between $v \in C(u)$ and $v' \in C(u')$ if and only if $(u, u') \in E_q$ and $(v, v') \in E_G$.
+\end{enumerate}
+
+Initially all $C(u)$ in $CS$ is set to $C_{ini}(u)$. The initial candidate sets can be further refined
+to exclude unnecessary elements with the help of $q_D$ and $q^{-1}_D$. The refinement procedure alternates
+between the two DAGs in each of its execution. The current DAG is denoted by $q'$, and initially it is set
+to $q^{-1}_D$. The procedure refines all $C(u)$ into $C'(u)$ with dynamic programming.
+
+$v \in C'(u)$ if and only if $v \in C(u)$ and there exists a $v_c$ vertex which is a neighbor of $v$, and
+$v_c \in C(u_c)$ for all $u_c$ children of $u$ in $q'$. I.e. $v$ remains in the candidate set if it is
+connected to at least one candidate from all children of $u$ in $q'$. The procedure traverses $q'$ in a
+reversed order, thus nodes will be processed only after all their children has been processed. According to
+the authors' empirical study, $CS$ cannot be further refined after three steps usually.
+
+During refinement, only the candidate sets are maintained, the edges are not. They are added to the $CS$
+structure only after the refinement procedure has ended. The edges are stored in adjacency lists $N^u_{u_c}(v)$
+for each $v \in C(u)$, and for each $(u, u_c) \in E_{q_D}$. $N^u_{u_c}(v)$ contains a list of vertices $v_c$
+adjacent to $v$ in $G$ such that $v_c \in C(u_c)$.
+
+\subsubsection{Backtracking and adaptive matching order}
+
+Finally, DAF searches all mappings of $q$ in $CS$ which corresponds searching mappings in $G$. A vertex $u \in q_D$
+is extendable respected to partial mapping $m$ if all predecessors of $u$ in $q_D$ are covered by $m$. In each state
+of the algorithm, it determines the set of extendable vertices. For each extendable vertex, it calculates the set of
+extendable candidates $C_m(u)$ respected to partial mapping $m$. Let $p_1, \cdots, p_k$ be the predecessors of an
+extendable vertex $u$ in $q_D$. The extendable candidate set of $u$ is defined as the candidates that are adjacent to
+the pairs of all neighbors of $u$ in $q$. Formally,
+
+\[ C_m(u) = \cap^k_{i=1} N^{p_i}_u(m(p_i)) \]
+
+The matching order is determined based on the extendable candidate sets. The authors describe two methods.
+\begin{itemize}
+    \item Candidate-size order: the next vertex to be matched is an extendable vertex $u$ where $|C_m(u)|$ is minimal.
+    \item Path-size order: the next selected extendable vertex $u$ is where $w_m(u)$ is minimal. $w_m(u)$ is an estimate for the weight of a path mapping. Since we used the candidate size order in our experiments, we don't define $w_m(u)$ in much more detail here.
+\end{itemize}
+
+The matching order is adaptive because it depends on the current partial mapping. After an extendable vertex $u$
+has been selected, DAF extends the mapping with $(u, v_c)$ for each candidate $v_c$ in $C_m(u)$, and it backtracks
+after traversing the whole subtree.
+
+\subsubsection{Failing sets}
+
+DAF uses failing sets to find and prune branches that are unnecessary to traverse because they cannot contain any
+whole mappings. The search tree is traversed in DFS (depth first search) order with a backtracking algorithm. It
+is possible however, that a partial mapping $m$ extended with $(u, v)$ will not be wholly extendable because of
+other conflicting pairs in $m$ which were added higher up in the search tree, thus matching $u$ with other $v'$
+vertices will not result in any whole mappings either. Failing sets help to find these branches. A failing set is
+denoted by $F_m$ where $m$ is a partial mapping corresponding to a path in the search tree. Failing sets are computed
+from bottom-up. A leaf can belong to one of three classes. Let $anc(u)$ and $succ(u)$ denote the ancestors and 
+successors of $u$ in $q$, respectively.
+
+\begin{itemize}
+    \item Conflict class: If $(u, v)$ is a leaf, and $v$ is already covered then $(u, v)$ belongs to the conflict class, and it is denoted by $(u, v)!$. In case of a conflict class, $F_m = anc(u) \cup anc(m^{-1}(v))$.
+    \item Empty class: If $u$ has no extendable candidates, $(u, \emptyset)$ belongs to the empty class. $F_m = anc(u)$.
+    \item Mapping class: If the mapping belonging to the leaf is a whole mapping, then it belongs to the mapping class. $F_m = \emptyset$.
+\end{itemize}
+
+Failing sets for internal, non-leaf vertices are defined by the failing sets of their children. Let $(u_n, v_i)$ be the 
+children of the current node $(u, v)$, and let $m_i$ denote the partial mappings of the children, while let the current 
+mapping of $(u, v)$ be $m$. $F_m$ is computed the way described in algorithm \ref{alg:daffs}.
+
+\begin{algorithm}[h]
+    \SetAlgoLined\DontPrintSemicolon    
+    \uIf(){$\exists \text{child node} m_i \text{such that} F_{m_i} = \emptyset$}{
+        \nl $F_m = \emptyset$\;
+    }
+    \Else{
+        \uIf(){$\exists \text{child node} m_i \text{such that} u_n \notin F_{m_i} $}{
+            \nl $F_m = F_{m_i}$ \;
+        }
+        \Else{
+            \nl $F_m = \cup^k_{i=1}F_{m_i}$ \;
+        }
+    }    
+    \label{alg:daffs}
+    \caption{Calculate the failing set of an internal node}
+\end{algorithm}
+
+If the algorithm is at a node $(u, v)$ in the search tree whose $F_m \neq \emptyset$ and $u \notin F_m$, then it
+means that it does not matter, which candidate is matched to $u$, no whole mappings will be found, thus all siblings
+of $(u, v)$ are redundant which means that these branches can be pruned.
+
+\todo{example}
+

@@ -1,0 +1,11 @@
+\chapter{Implementation}
+
+All algorithms were written in Python. To evaluate the correctness of our work, two already 
+existing induced subgraph isomorphism implementations were used: networkx's (Python graph 
+library) isomorphism module and boost c++ library's vf2\_subgraph\_iso\ module. Both modules
+implement VF2.
+
+\section{DAF}
+
+While implementing DAF, we chose the candidate-size matching order because it was the faster
+option to evaluate.
