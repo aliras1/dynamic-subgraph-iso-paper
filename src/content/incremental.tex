@@ -93,9 +93,11 @@ ones that were impossible in the past.
 In the upcoming sections, we define an incremental algorithm for each type of graph 
 modifications.
 
-\subsection{Node deletion}
+\subsection{Node operations}
 
-Deleting a node from $v_d$ from $G$ can only reduce the original number of mappings.
+\subsubsection{Node deletion}
+
+Deleting a node $v_d$ from $G$ can only reduce the original number of mappings.
 Mappings that did not contain $v_d$ are unaffected, while those that contained $v_d$ 
 have to be removed since they no longer can map to $v_d$. Now we only have to think 
 through that no new mappings could arise. Indeed, that cannot be the case because
@@ -134,7 +136,7 @@ to a node $v \notin N_d(G, v_d)$.
     \caption{Delete node incrementally}
 \end{algorithm}
 
-\subsection{Node insertion}
+\subsubsection{Node insertion}
 
 Inserting a new node has no effects on mappings whatsoever because at the time of insertion,
 it cannot be part of any mappings because it has not connections. Thus inserting a new node
@@ -147,8 +149,7 @@ in loosing and gaining mappings. Removing an edge $e$ makes mappings where nodes
 were part of the mapping no longer valid. At the same time, in case of partial mappings
 where $e$ made it impossible to further extend, removing it may cause new mappings to
 appear. For example in \ref{fig:insdelmap}, as a result of removing the BD edge from $G$,
-$M(q_1, G')$ will loose half of its mappings, while $M(q_2, G')$ will double the amount of
-its mappings. 
+$M(q_1, G')$ will loose all of its mappings, while $M(q_2, G')$ will find only new mappings. 
 
 \begin{figure}[h]
     \centering
@@ -181,6 +182,7 @@ its mappings.
         \draw (C) -- (D);
         \draw (D) -- (A);
         \draw (B) -- (D);    
+        \draw (A) -- (C);    
       \end{tikzpicture}
       \caption{$q_1$}
       \label{fig:sfig2}
@@ -196,6 +198,7 @@ its mappings.
           \draw (B) -- (C);
           \draw (C) -- (D);
           \draw (D) -- (A);
+          \draw (A) -- (C);    
         \end{tikzpicture}
         \caption{$q_2$}
         \label{fig:sfig3}
@@ -232,6 +235,8 @@ from the first point where $v_1$ and $v_2$ both appeared in the path. \ref{alg:d
 shows the pruning algorithm when an edge was deleted.
 
 \begin{algorithm}[htp]
+    \caption{Prune search tree on edge deletion}
+    \label{alg:deledgeprune}
     \SetAlgoLined\DontPrintSemicolon    
     \SetKwFunction{prune}{prune}
     
@@ -252,9 +257,7 @@ shows the pruning algorithm when an edge was deleted.
         }
 
         \nl $node.children = \{child \in node.children: \neg \prune(child, v_1, v_2) \}$\;     
-    }    
-    \caption{Prune search tree on edge deletion}
-    \label{alg:deledgeprune}
+    }        
 \end{algorithm}
 
 Fig \ref{fig:pruneex} shows an example partial search tree of $G$ and $q_3$ from Fig. \ref{fig:insdelmap}.
@@ -288,7 +291,7 @@ or $v_2$ or both. Thus our job is reduced to look for partial mappings that cont
 those two vertices. There are two kinds of partial mappings to consider. Typically, the search
 tree will contain some partial mappings that contain one of these two vertices but definitely
 not all of them. As a first step, we add these partial mappings to the search tree. We traverse 
-the tree and check if a node has a child that maps the next vertex $u \in q$ to $v_i$. If it does
+the tree and check if a node has a child that maps the next vertex $u \in V_q$ to $v_i$. If it does
 not, and $v_i$ was not covered already in the mapping, and it causes no conflicts between the 
 topology of the mapping and $q$ then we create a new child under the current node with 
 $m(u) = v_i$. Now that we have all the partial mappings containing $v_1$ or $v_2$ - note that not 
@@ -299,12 +302,14 @@ hit a node where (1) we can create a new child or (2) a node is a leaf and its p
 or $v_2$, and it is not a complete mapping, we execute our subgraph isomorphism algorithm. We
 can speed up the algorithm by only considering those branches that contain vertices such that
 $\forall v \in m: v \in N_d(G, v_1) \cup N_d(G, v_2)$, i.e. branches that contain only mapped 
-vertices such that they are in the $d$th neighborhood of $e$. Alg. \ref{alg:deledgefind}
+vertices such that they are in the $d$th neighborhood of $e$. algorithm \ref{alg:deledgefind}
 formally describes the algorithm of finding new mappings after an edge has been deleted, and
-Alg. \ref{alg:deledge} shows the incremental algorithm for subgraph isomorphism in case of edge 
+algorithm \ref{alg:deledge} shows the incremental algorithm for subgraph isomorphism in case of edge 
 deletion.
 
 \begin{algorithm}[ht]
+    \caption{Find new mappings incrementally}
+    \label{alg:deledgefind}
     \SetAlgoLined\DontPrintSemicolon    
     \SetKwFunction{find}{find\_mappings}
     
@@ -333,12 +338,12 @@ deletion.
             }
         }
 
-    }        
-    \caption{Find new mappings incrementally}
-    \label{alg:deledgefind}
+    }            
 \end{algorithm}
 
 \begin{algorithm}[ht]
+    \caption{Delete edge incrementally}
+    \label{alg:deledge}
     \SetAlgoLined\DontPrintSemicolon    
     \SetKwFunction{prune}{prune}
     \SetKwFunction{find}{find\_mappings}
@@ -348,10 +353,7 @@ deletion.
     \nl $(v_1, v_2) = e$\;
     \nl $N_d(G, (v_1, v_2)) \gets$ $d$th neighborhood of $v_1$ and $v_2$ in $G$\;
     \nl \prune(root($T_{q, G}$), $v_1, v_2$)\;
-    \nl \find(root($T_{q, G}$), $\{v_1, v_2\}$)\;    
-    
-    \caption{Delete edge incrementally}
-    \label{alg:deledge}
+    \nl \find(root($T_{q, G}$), $\{v_1, v_2\}$)\;        
 \end{algorithm}
 
 
@@ -366,9 +368,11 @@ $(m^{-1}(v_1), m^{-1}(v_2)) \in E_q$ makes no sense because we just added that n
 can make this condition generic however, so that both edge operations can use the same predicate.
 Instead of separating the two cases, we will simply check that an edge between $v_1$ and $v_2$
 in $G$ exists if and only if an edge between $m^{-1}(v_1)$ and $m^{-1}(v_2)$ in $q$ exists.
-With these modifications, the final pruning algorithm can be found in Alg. \ref{alg:edgeprune}.
+With these modifications, the final pruning algorithm can be found in algorithm \ref{alg:edgeprune}.
 
 \begin{algorithm}[ht]
+    \caption{Prune search tree on edge operation}
+    \label{alg:edgeprune}
     \SetAlgoLined\DontPrintSemicolon    
     \SetKwFunction{prune}{prune}
     
@@ -391,7 +395,5 @@ With these modifications, the final pruning algorithm can be found in Alg. \ref{
         }
 
         \nl $node.children = \{child \in node.children: \neg \prune(child, v_1, v_2) \}$\;     
-    }    
-    \caption{Prune search tree on edge operation}
-    \label{alg:edgeprune}
+    }        
 \end{algorithm}

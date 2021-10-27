@@ -30,9 +30,9 @@ search graph.
 \cite{incrementalpatternmatching} discusses in depth several types of incremental graph pattern matching algorithms.
 However the authors' topic of interest in \cite{incrementalpatternmatching2} and \cite{incrementalpatternmatching} is incremental graph pattern matching
 with (bounded) graph simulation. A graph \(G\) matches a pattern \(q\) via graph 
-simulation if there exists a binary relation \(S \subseteq V_q \times V\) such that 
+simulation if there exists a binary relation \(S \subseteq V_q \times V_G\) such that 
 \begin{enumerate}
-    \item for each \(u \in V_q\), there exists \(v \in V\) such that \((u, v) \in S\);
+    \item for each \(u \in V_q\), there exists \(v \in V_G\) such that \((u, v) \in S\);
     \item for each \((u, v) \in S\), 
         \begin{enumerate}
             \item \(\mathcal{L}(u) = \mathcal{L}(v)\), and
@@ -98,23 +98,24 @@ measurements.
 \begin{definition}[Induced subgraph isomorphism]
     \(G_1\) is induced subgraph isomorphic to \(G_2\) if \(G_1\) is isomorphic to any
     induced subgraphs of \(G_2\). Throughout this paper, we refer to induced subgraph
-    isomorphism with the term of subgraph isomorphism. $M(q, G)$ denotes the set of 
-    mappings found by an arbitrary subgraph isomorphism algorithm.
+    isomorphism with the term of subgraph isomorphism. In this paper, we call $G_1$ as
+    query graph $q$ and $G_2$ as data graph $G$. $M(q, G)$ denotes the set of mappings 
+    found by an arbitrary subgraph isomorphism algorithm.
 \end{definition}
 
-\begin{definition}
+\begin{definition}[Mapping]
     An injection $m : D \rightarrow V_G$ is called a (partial) mapping, where $D \subseteq V_q$.
 \end{definition}
 
-\begin{definition}
-    $m_q$ and $m_G$ denotes the domain and the range of m respectively.
-\end{definition}
+\begin{notation}
+    $m_q$ and $m_G$ denotes the domain and the range of $m$ respectively.
+\end{notation}
 
-\begin{definition}
+\begin{definition}[Coverage]
     A mapping $m$ covers a node $u \in V_q \cup V_G$ if $u \in m_q \cup m_G$.
 \end{definition}
 
-\begin{definition}
+\begin{definition}[Whole mapping]
     A mapping $m$ is a whole mapping if it covers all the nodes of $V_q$.
 \end{definition}
 
@@ -126,7 +127,7 @@ updates \(\Delta G \) on \(G\) without recomputing all matches from scratch. \(\
 can be one of the following operations:
 \begin{itemize}
     \item add a new node to \(G\),
-    \item remove an existing node from \(G\),
+    \item remove an existing node from \(G\) along with all its associated edges,
     \item add an edge between two nodes of \(G\) and
     \item remove an existing edge between two nodes of \(G\).
 \end{itemize}
@@ -191,7 +192,7 @@ mappings for which it can be proven that they cannot be extended to a whole mapp
     \caption{VF2 algorithm}
 \end{algorithm}
 
-Let $T_q(m) := {u \in V_q \ m_q: \exists u' \in m_q: (u, u') \in E_q}$, and
+Let $T_q(m) := {u \in V_q \ m_q: \exists u' \in m_q: (u, u') \in E_q}$, and \\
 $T_G(m) := {v \in V_G \ m_G: \exists v' \in m_G: (v, v') \in E_G}$.
 
 The candidate set for extending $m$ is $P_m$. $P_m$ consists of the pairs of uncovered neighbors
@@ -200,7 +201,7 @@ of covered nodes. If there exists no such pair, $P_m$ contains all uncovered nod
 \[
     P_m = 
 \begin{cases}
-    T_q(m) \times T_G(m),& \text{if} T_q(m) \neq \emptyset \text{and} T_G(m) \neq \emptyset\\
+    T_q(m) \times T_G(m),& \text{if } T_q(m) \neq \emptyset \text{ and } T_G(m) \neq \emptyset\\
     (V_q \setminus m_q) \times (V_G \setminus m_G),  & \text{otherwise}.
 \end{cases}    
 \]
@@ -214,9 +215,9 @@ order, in which the vertices of $q$ are processed in a partial mapping, and by a
 a more efficient cutting function.
 
 The order of the nodes of $q$ to be matched have a huge impact on the number of visited
-states. In case of VF2, the lack of strictly defined matching order can lead to evaluating
-states that cannot be wholly extended, only to realize this deep down on the search tree.
-By choosing a proper matching order, one can eliminate such unnecessary computations earlier.
+states. In case of VF2, the lack of strictly defined matching order can result in evaluating 
+an unnecessarily larger number of states that could have been pruned if the matching order was
+different. By choosing a proper matching order, one can eliminate such non-fruitful computations earlier.
 
 \begin{example}
     The following example was taken from the original VF2++ paper. Let $q$ be a query graph 
@@ -229,7 +230,7 @@ By choosing a proper matching order, one can eliminate such unnecessary computat
     VF2 would iterate through all possible $k$ long paths in $G$, only to realize that no
     partial mappings can be extended to $q'$.
 
-    However, if it started the matching process with vertices from $q$, it would not have
+    However, if the algorithm started the matching process with vertices from $q$, it would not have
     matched any nodes from the path.
 \end{example}
 
@@ -241,25 +242,27 @@ and with the largest degree. This node will be the root of a tree, which will be
 the final matching order $\mathcal{O}$.
 
 
-\[ root = {r | r \in \argmax_{deg}(\argmin_{label_{\mathcal{O}}}(V_q \setminus \mathcal{O}))} \]
-, where $label_{\mathcal{O}}(n) := |{v \in V_G : \mathcal{L}(n) = \mathcal{L}(v)}| - |{u \in \mathcal{O}: \mathcal{L}(n) = \mathcal{L}(u)}|$, 
+\[ root = {r | r \in \argmax_{deg}(\argmin_{label_{\mathcal{O}}}(V_q \setminus \mathcal{O}))}, \]
+where $label_{\mathcal{O}}(n) := |{v \in V_G : \mathcal{L}(n) = \mathcal{L}(v)}| - |{u \in \mathcal{O}: \mathcal{L}(n) = \mathcal{L}(u)}|$, 
 i.e. it computes the difference between the number of vertices in $G$ with the label of $n$ and 
 the number of vertices in $\mathcal{O}$ with the label of $n$. Next, the algorithm computes a tree 
 $T$ by traversing $q$ in BFS (Breadth first search) order from the previously calculated root, and
 it processes each level of $T$ the following way. Let $V_{q,d}$ denote the set of vertices of $T$ in
-depth $d$. The process selects the vertices with the largest connectivity respect to $\mathcal{O}$,
+depth $d$. The process selects the vertices with the largest connectivity respect to $\mathcal{O}$ denoted by $conn$,
 i.e. those nodes whose number of neighbors that are already in $\mathcal{O}$ is the largest. Then
 from these nodes, it selects the ones with the largest degree, then those with the rarest label.
 
-\[ o = {u | u \in \argmin_{label_{\mathcal{O}}}(\argmax_{deg}(\argmax_{conn}(V_{q,d})))} \]
+\[ o = {u | u \in \argmin_{label_{\mathcal{O}}}(\argmax_{deg}(\argmax_{conn}(V_{q,d})))}, \]
 
 The selected node $o$ is appended to $\mathcal{O}$, and it is removed from $V_{q,d}$. This continues 
 until $V_{q,d}$ has no more elements. Algorithm \ref{alg:vf2pporder} and \ref{alg:vf2ppproc} describe
 the matching order procedures on a high level.
 
 \begin{algorithm}[h]
+    \caption{VF2++ order}
+    \label{alg:vf2pporder}
     \SetAlgoLined\DontPrintSemicolon
-    \SetKwFunction{proc}{vf2\_order}
+    \SetKwFunction{proc}{vf2pp\_order}
     \SetKwFunction{process}{process}
     \SetKwProg{myproc}{Procedure}{}{}
     \myproc{\proc{}}{
@@ -272,12 +275,12 @@ the matching order procedures on a high level.
                 \nl \process{$V_q,d$}\;
             }
         }           
-    }
-    \label{alg:vf2pporder}
-    \caption{VF2++ order}
+    }        
 \end{algorithm}
 
-\begin{algorithm}[h]
+\begin{algorithm}[h]    
+    \caption{VF2++ process the d-th level of $T$}
+    \label{alg:vf2ppproc}
     \SetAlgoLined\DontPrintSemicolon
     \SetKwFunction{proc}{process}
     \SetKwProg{myproc}{Procedure}{}{}
@@ -287,9 +290,7 @@ the matching order procedures on a high level.
             \nl $V_{q,d}$ $\gets$ $V_{q,d} \setminus o$\;
             \nl $\mathcal{O}$.append($o$)\;
         }        
-    }
-    \label{alg:vf2ppproc}
-    \caption{VF2++ process the d-th level of $T$}
+    }    
 \end{algorithm}
 
 \begin{example}\label{ex:vf2pporder}
@@ -338,7 +339,7 @@ the matching order procedures on a high level.
     
     We want to compute the matching order
     of $q$. To select the root node for our BFS tree $T$, we need the least frequent labels. In this example,
-    all labels are assigned twice, which means that our root candidates are still $u_1, u_2, u_3, u_4$.
+    all labels in $G$ are assigned twice, which means that our root candidates are still $u_1, u_2, u_3, u_4$.
     From these vertices, the vertex with the largest degree is $u_2$, thus it will be the root of $T$.
     The resulting tree from traversing $q$ in BFS order can be seen in figure \ref{fig:vf2pporderbfs}.
 
@@ -380,20 +381,22 @@ the matching order procedures on a high level.
 
 
 VF2++'s additional changes to the original include a refined way of determining the candidates
-of $u \in V_q$ and applying cutting rules on them. In this version, $u \in q$'s candidates will be 
-$v \in G$ that are in the neighborhood of $m_G$, are not covered yet and are consistent with $m$.
+of $u \in V_q$ and applying cutting rules on them. In this version, $u \in V_q$'s candidates will be 
+$v \in V_G$ that are in the neighborhood of $m_G$, are not covered yet and are consistent with $m$.
 
-\[ P_m(u) = {v \in G | \neg covered_m(v) \land \forall u' \in q: (u, u') \in E_q \land u' \in m_q \iff (v, m(u')) \in E_G}  \]
+\[ P_m(u) = {v \in V_G | \neg covered_m(v) \land \forall u' \in V_q: (u, u') \in E_q \land u' \in m_q \iff (v, m(u')) \in E_G}  \]
 
 VF2++ also introduces a new cutting rule which verifies that for a given candidate pair $(u, v)$,
 $v$ in $G$ has at least as many neighbors with the appropriate labels as $u$ in $q$. 
 
-Summarizing the two extensions made over VF2, the final VF2++ algorithm is defined in Alg. \ref{alg:vf2pp}.
+Summarizing the two extensions made over VF2, the final VF2++ algorithm is defined in algorithm \ref{alg:vf2pp}.
 
 \begin{algorithm}[h!]
+    \caption{VF2++ algorithm}
+    \label{alg:vf2pp}    
     \SetAlgoLined\DontPrintSemicolon
     \SetKwFunction{vfpp}{vf2pp}
-    \SetKwFunction{order}{order}
+    \SetKwFunction{order}{vf2pp\_order}
     \SetKwFunction{match}{match}
     \SetKwProg{myproc}{Procedure}{}{}
     \myproc{\vfpp{$q, G$}}{
@@ -406,21 +409,19 @@ Summarizing the two extensions made over VF2, the final VF2++ algorithm is defin
         }
         \Else{
             \nl $u$ $\gets$ $\mathcal{O}[d]$\;
-            \nl $P_m(u) = {v \in G | \neg covered_m(v) \land \forall u' \in q: (u, u') \in E_q \land u' \in m_q \iff (v, m(u')) \in E_G}$\;
+            \nl $P_m(u) = {v \in V_G | \neg covered_m(v) \land \forall u' \in V_q: (u, u') \in E_q \land u' \in m_q \iff (v, m(u')) \in E_G}$\;
             \ForEach(){$(u, v) \in P_m$}{
                 \uIf(){$\mathcal{F}(m, (u, v))$}{
                     \nl \match(extend($m, (u,v)$), $d+1$)\;
                 }
             }
         }        
-    }
-    \label{alg:vf2pp}
-    \caption{VF2++ algorithm}
+    }    
 \end{algorithm}
 
 
 \begin{example}
-    Let us continue our example started in \ref{ex:vf2pporder}. As a reminder, the matching order is
+    Let us continue our example started in example \ref{ex:vf2pporder}. As a reminder, the matching order is
     $\mathcal{O} = \{u_2, u_1, u_3, u_4\}$. Now we have to find all mappings of $q$ in $G$. VF2++ starts
     with an empty mapping. The next vertex to match according to $\mathcal{O}$ is $u_2$. Since it is
     the first node in the mapping, its candidates will be the set of all nodes $v_j \in V_G$. $u_2$ has
@@ -454,6 +455,129 @@ Summarizing the two extensions made over VF2, the final VF2++ algorithm is defin
         \label{fig:vf2ppfirst}
     \end{figure}
 
+    The next vertex in the order is $u_1$ which has one neighbor that is in the current mapping: $u_2$. $u_1$'s candidates are the vertices $v_j \in V_G$
+    that are adjacent to $m(u_2) = v_5$. The candidates are $v_3, v_4, v_5$. Now we apply our cutting rules. $v_3$ is not feasable because it has no neighbors
+    with label $B$. $v_4$ is feasable because it has all the necessary neighbors with the right labels. We extend the tree with $(u_1, v_4)$. Figure \ref{fig:vf2ppsnd}
+    shows the second level of the search tree.
+
+    \begin{figure}[h!]
+        \centering
+        \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+            \node[main node] (0) {\scriptsize$\emptyset, \emptyset$};
+            \node[main node, red,inner sep=0pt] (23) [below left=of 0] {\scriptsize$u_2,v_3$};
+            \node[main node, red,inner sep=0pt] (24) [below right=of 0] {\scriptsize$u_2,v_4$};
+            \node[main node, red,inner sep=0pt] (22) [left=of 23] {\scriptsize$u_2, v_2$};
+            \node[main node, red,inner sep=0pt] (21) [left=of 22] {\scriptsize$u_2, v_1$};
+            \node[main node,inner sep=0pt] (25) [right=of 24] {\scriptsize$u_2, v_5$};            
+            \node[main node,red,inner sep=0pt] (13) [below left=of 25] {\scriptsize$u_1, v_3$};            
+            \node[main node,inner sep=0pt] (14) [right=of 13] {\scriptsize$u_1, v_4$};            
+            \draw (0) -- (21);
+            \draw (0) -- (22);
+            \draw (0) -- (23);
+            \draw (0) -- (24);
+            \draw (0) -- (25);
+            \draw (25) -- (13);
+            \draw (25) -- (14);
+          \end{tikzpicture}
+        \caption{Second level of a VF2++ search tree}
+        \label{fig:vf2ppsnd}
+    \end{figure}
+
+    The thrid vertex is $u_3$. We select its neighbor is $q$, which is $u_1$. Now we consider $u_1$'s pair $v_4$, and we select its uncovered neighbors in $G$.
+    These are the vertices $v_2$ and $v_3$. We check if these vertices are adjacent to $u_2$'s pair $v_5$. $v_2$ is not, thus the only candidate is $v_5$. $v_5$ 
+    also passed the cutting test, and we extend the mapping with $(u_3, v_3)$. Figure \ref{fig:vf2ppthird} shows the search tree with three levels.
+
+    \begin{figure}[h!]
+        \centering
+        \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+            \node[main node] (0) {\scriptsize$\emptyset, \emptyset$};
+            \node[main node, red,inner sep=0pt] (23) [below left=of 0] {\scriptsize$u_2,v_3$};
+            \node[main node, red,inner sep=0pt] (24) [below right=of 0] {\scriptsize$u_2,v_4$};
+            \node[main node, red,inner sep=0pt] (22) [left=of 23] {\scriptsize$u_2, v_2$};
+            \node[main node, red,inner sep=0pt] (21) [left=of 22] {\scriptsize$u_2, v_1$};
+            \node[main node,inner sep=0pt] (25) [right=of 24] {\scriptsize$u_2, v_5$};            
+            \node[main node,red,inner sep=0pt] (13) [below left=of 25] {\scriptsize$u_1, v_3$};            
+            \node[main node,inner sep=0pt] (14) [right=of 13] {\scriptsize$u_1, v_4$};            
+            \node[main node,inner sep=0pt] (33) [below=of 14] {\scriptsize$u_3, v_3$};  
+            \draw (0) -- (21);
+            \draw (0) -- (22);
+            \draw (0) -- (23);
+            \draw (0) -- (24);
+            \draw (0) -- (25);
+            \draw (25) -- (13);
+            \draw (25) -- (14);
+            \draw (14) -- (33);
+          \end{tikzpicture}
+        \caption{Third level of a VF2++ search tree}
+        \label{fig:vf2ppthird}
+    \end{figure}
+
+    The last vertex is $u_4$. Its only neighbor in $q$ is $u_2$. $u_2$'s pair is $v_5$. We select the its uncovered neighbors in $G$ which is
+    $v_6$. It also passes the feasability test, thus we extend the current mapping with $(u_4, v_6)$, which is a whole mapping.
+
+    \begin{figure}[h!]
+        \centering
+        \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+            \node[main node] (0) {\scriptsize$\emptyset, \emptyset$};
+            \node[main node, red,inner sep=0pt] (23) [below left=of 0] {\scriptsize$u_2,v_3$};
+            \node[main node, red,inner sep=0pt] (24) [below right=of 0] {\scriptsize$u_2,v_4$};
+            \node[main node, red,inner sep=0pt] (22) [left=of 23] {\scriptsize$u_2, v_2$};
+            \node[main node, red,inner sep=0pt] (21) [left=of 22] {\scriptsize$u_2, v_1$};
+            \node[main node,inner sep=0pt] (25) [right=of 24] {\scriptsize$u_2, v_5$};            
+            \node[main node,red,inner sep=0pt] (13) [below left=of 25] {\scriptsize$u_1, v_3$};            
+            \node[main node,inner sep=0pt] (14) [right=of 13] {\scriptsize$u_1, v_4$};            
+            \node[main node,inner sep=0pt] (33) [below=of 14] {\scriptsize$u_3, v_3$};  
+            \node[main node,inner sep=0pt] (46) [below=of 33] {\scriptsize$u_4, v_6$};  
+            \draw (0) -- (21);
+            \draw (0) -- (22);
+            \draw (0) -- (23);
+            \draw (0) -- (24);
+            \draw (0) -- (25);
+            \draw (25) -- (13);
+            \draw (25) -- (14);
+            \draw (14) -- (33);
+            \draw (33) -- (46);
+          \end{tikzpicture}
+        \caption{Fourth level of a VF2++ search tree}
+        \label{fig:vf2pp4}
+    \end{figure}
+
+    Now we backtrack in the search tree. $v_3$ has no other candidates. We check $u_1$'s last candidate, $v_6$, which is infeasible.
+    The last candidate to check is $(u_2, v_6)$ which is also infeasible. The final search tree can be found in figure \ref{fig:vf2ppfinal}.
+
+    \begin{figure}[h!]
+        \centering
+        \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+            \node[main node] (0) {\scriptsize$\emptyset, \emptyset$};
+            \node[main node, red,inner sep=0pt] (23) [below left=of 0] {\scriptsize$u_2,v_3$};
+            \node[main node, red,inner sep=0pt] (24) [below right=of 0] {\scriptsize$u_2,v_4$};
+            \node[main node, red,inner sep=0pt] (22) [left=of 23] {\scriptsize$u_2, v_2$};
+            \node[main node, red,inner sep=0pt] (21) [left=of 22] {\scriptsize$u_2, v_1$};
+            \node[main node,inner sep=0pt] (25) [right=of 24] {\scriptsize$u_2, v_5$}; 
+            \node[main node,red,inner sep=0pt] (26) [right=of 25] {\scriptsize$u_2, v_6$};                       
+            \node[main node,red,inner sep=0pt] (13) [below left=of 25] {\scriptsize$u_1, v_3$};            
+            \node[main node,inner sep=0pt] (14) [right=of 13] {\scriptsize$u_1, v_4$};            
+            \node[main node,red,inner sep=0pt] (16) [right=of 14] {\scriptsize$u_1, v_6$};            
+            \node[main node,inner sep=0pt] (33) [below=of 14] {\scriptsize$u_3, v_3$};  
+            \node[main node,inner sep=0pt] (46) [below=of 33] {\scriptsize$u_4, v_6$};  
+            \draw (0) -- (21);
+            \draw (0) -- (22);
+            \draw (0) -- (23);
+            \draw (0) -- (24);
+            \draw (0) -- (25);
+            \draw (0) -- (26);
+            \draw (25) -- (13);
+            \draw (25) -- (14);
+            \draw (25) -- (16);
+            \draw (14) -- (33);
+            \draw (33) -- (46);
+          \end{tikzpicture}
+        \caption{Complete VF2++ search tree}
+        \label{fig:vf2ppfinal}
+    \end{figure}
+
+    The mapping that we found via VF2++ is the following: $(u_1, v_4), (u_2, v_5), (u_3, v_3), (u_4, v_6)$.
+
 \end{example}
 
 \subsection{DAF}
@@ -468,30 +592,30 @@ Furthermore, it uses failing sets in order to prune the parts of the search spac
 proven that they contain no whole mappings. Algorithm \ref{alg:daf} shows a high level description of DAF.
 
 \begin{algorithm}[h]
+    \caption{DAF}
+    \label{alg:daf}    
     \SetAlgoLined\DontPrintSemicolon
     \KwIn{q, G}
     \KwOut{all mappings}
     \nl $q_D$ $\gets$ $build\_dag(q, G)$\;
     \nl $CS$ $\gets$ $build\_cs(q, q_D, G)$\;
     \nl $M$ $\gets$ $\emptyset$\;
-    \nl $backtrack(q, q_D, CS, M)$\;
-    \label{alg:daf}
-    \caption{DAF}
+    \nl $backtrack(q, q_D, CS, M)$\;    
 \end{algorithm}
 
 \subsubsection{Build DAG}
 
 DAF creates a DAG (directed acyclic graph) $q_D$ from $q$. $q_D$ will be used for computing $CS$, and later
-for computing the matching order adaptively. For each node $u \in q$, let the initial candidate set be:
+for computing the matching order adaptively. For each node $u \in V_q$, let the initial candidate set be:
 
 \[ C_{ini}(u) = {v | v \in V_G \land deg_G(v) \geq deg_q(u) \land \mathcal{L}_q(u) = \mathcal{L}_G(v)} \]
 
-, i.e. those $v \in G$ vertices with the same label as $u$ in $q$ whose degree is also greater than or 
+, i.e. those $v \in V_G$ vertices with the same label as $u$ in $q$ whose degree is also greater than or 
 equal to the degree of $u$. Now that the initial candidates are computed, we define the root of $q_d$
 and the first vertex to be matched as
 
-\[ r \in \argmin \frac{|C_{ini}(u)|}{deg_q(u)} \], where $u \in V_q$. The lesser this quotient is the 
-lesser candidates $u$ will have and since it has a large degree, it will have more topological constraints 
+\[ r \in \argmin \frac{|C_{ini}(u)|}{deg_q(u)}, \] where $u \in V_q$. The less this quotient is the 
+less candidates $u$ will have and since it has a large degree, it will have more topological constraints 
 then others, thus the algorithm can prune more branches.
 
 Starting from $r$, DAF traverses $q$ in BFS order and it directs all edges in $q_D$ from upper levels to
@@ -507,7 +631,7 @@ The next step is to build the candidate space structure $CS$.
 \subsubsection{Build CS}
 
 Given a query graph $q$ and a data graph $G$, a CS structure built from $q$ and $G$ contains candidates $C(u)$
-for all $u \in q$ such that
+for all $u \in V_q$ such that
 
 \begin{enumerate}
     \item $\forall u \in V_q : \exists$ a candidate set $C(u) \subseteq C_{ini}(u)$, and
@@ -532,7 +656,7 @@ adjacent to $v$ in $G$ such that $v_c \in C(u_c)$.
 
 \subsubsection{Backtracking and adaptive matching order}
 
-Finally, DAF searches all mappings of $q$ in $CS$ which corresponds searching mappings in $G$. A vertex $u \in q_D$
+Finally, DAF searches all mappings of $q$ in $CS$ which corresponds searching mappings in $G$. A vertex $u \in V_{q_D}$
 is extendable respected to partial mapping $m$ if all predecessors of $u$ in $q_D$ are covered by $m$. In each state
 of the algorithm, it determines the set of extendable vertices. For each extendable vertex, it calculates the set of
 extendable candidates $C_m(u)$ respected to partial mapping $m$. Let $p_1, \cdots, p_k$ be the predecessors of an
@@ -547,7 +671,7 @@ The matching order is determined based on the extendable candidate sets. The aut
     \item Path-size order: the next selected extendable vertex $u$ is where $w_m(u)$ is minimal. $w_m(u)$ is an estimate for the weight of a path mapping. Since we used the candidate size order in our experiments, we don't define $w_m(u)$ in much more detail here.
 \end{itemize}
 
-The matching order is adaptive because it depends on the current partial mapping. After an extendable vertex $u$
+The matching order is adaptive because it depends on the current partial mapping $m$. After an extendable vertex $u$
 has been selected, DAF extends the mapping with $(u, v_c)$ for each candidate $v_c$ in $C_m(u)$, and it backtracks
 after traversing the whole subtree.
 
@@ -559,8 +683,8 @@ is possible however, that a partial mapping $m$ extended with $(u, v)$ will not 
 other conflicting pairs in $m$ which were added higher up in the search tree, thus matching $u$ with other $v'$
 vertices will not result in any whole mappings either. Failing sets help to find these branches. A failing set is
 denoted by $F_m$ where $m$ is a partial mapping corresponding to a path in the search tree. Failing sets are computed
-from bottom-up. A leaf can belong to one of three classes. Let $anc(u)$ and $succ(u)$ denote the ancestors and 
-successors of $u$ in $q$, respectively.
+from bottom-up. Let $anc(u)$ and $succ(u)$ denote the ancestors and successors of $u$ in $q$, respectively. A leaf can 
+belong to one of three classes.
 
 \begin{itemize}
     \item Conflict class: If $(u, v)$ is a leaf, and $v$ is already covered then $(u, v)$ belongs to the conflict class, and it is denoted by $(u, v)!$. In case of a conflict class, $F_m = anc(u) \cup anc(m^{-1}(v))$.
@@ -569,24 +693,24 @@ successors of $u$ in $q$, respectively.
 \end{itemize}
 
 Failing sets for internal, non-leaf vertices are defined by the failing sets of their children. Let $(u_n, v_i)$ be the 
-children of the current node $(u, v)$, and let $m_i$ denote the partial mappings of the children, while let the current 
+children of the current node $(u, v)$, and let $m_i$ denote the partial mappings of the children and let the current 
 mapping of $(u, v)$ be $m$. $F_m$ is computed the way described in algorithm \ref{alg:daffs}.
 
 \begin{algorithm}[h]
+    \caption{Calculate the failing set of an internal node}
+    \label{alg:daffs}    
     \SetAlgoLined\DontPrintSemicolon    
-    \uIf(){$\exists \text{child node} m_i \text{such that} F_{m_i} = \emptyset$}{
+    \uIf(){$\exists \text{child node } m_i \text{ such that } F_{m_i} = \emptyset$}{
         \nl $F_m = \emptyset$\;
     }
     \Else{
-        \uIf(){$\exists \text{child node} m_i \text{such that} u_n \notin F_{m_i} $}{
+        \uIf(){$\exists \text{child node } m_i \text{ such that } u_n \notin F_{m_i} $}{
             \nl $F_m = F_{m_i}$ \;
         }
         \Else{
             \nl $F_m = \cup^k_{i=1}F_{m_i}$ \;
         }
-    }    
-    \label{alg:daffs}
-    \caption{Calculate the failing set of an internal node}
+    }        
 \end{algorithm}
 
 If the algorithm is at a node $(u, v)$ in the search tree whose $F_m \neq \emptyset$ and $u \notin F_m$, then it
