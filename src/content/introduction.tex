@@ -316,12 +316,12 @@ the matching order procedures on a high level.
         \begin{subfigure}{.4\textwidth}
           \centering
           \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
-            \node[main node] (1) {\scriptsize$v_1$};
-            \node[main node] (2) [below=of 1] {\scriptsize$v_2$};
-            \node[main node] (3) [below right =of 2] {\scriptsize$v_3$};
-            \node[main node] (4) [right =of 2] {\scriptsize$v_4$};    
-            \node[main node] (5) [right =of 3] {\scriptsize$v_5$};    
-            \node[main node] (6) [right =of 4] {\scriptsize$v_6$};    
+            \node[main node,label={\scriptsize C}] (1) {\scriptsize$v_1$};
+            \node[main node,label={\scriptsize A}] (2) [below=of 1] {\scriptsize$v_2$};
+            \node[main node,label={\scriptsize B}] (3) [below right =of 2] {\scriptsize$v_3$};
+            \node[main node,label={\scriptsize A}] (4) [right =of 2] {\scriptsize$v_4$};    
+            \node[main node,label={\scriptsize C}] (5) [right =of 3] {\scriptsize$v_5$};    
+            \node[main node,label={\scriptsize B}] (6) [right =of 4] {\scriptsize$v_6$};    
             \draw (1) -- (2);
             \draw (2) -- (4);
             \draw (2) -- (3);
@@ -350,9 +350,9 @@ the matching order procedures on a high level.
             \node[main node] (3) [below left=of 2] {\scriptsize$u_3$};
             \node[main node] (1) [below =of 2] {\scriptsize$u_1$};
             \node[main node] (4) [below right=of 2] {\scriptsize$u_4$};
-            \draw (2) -- (3);
-            \draw (2) -- (1);
-            \draw (2) -- (4);
+            \draw[->] (2) -- (3);
+            \draw[->] (2) -- (1);
+            \draw[->] (2) -- (4);
           \end{tikzpicture}
         \caption{BFS tree of $q$ from $u_2$}
         \label{fig:vf2pporderbfs}
@@ -594,5 +594,159 @@ If the algorithm is at a node $(u, v)$ in the search tree whose $F_m \neq \empty
 means that it does not matter, which candidate is matched to $u$, no whole mappings will be found, thus all siblings
 of $(u, v)$ are redundant which means that these branches can be pruned.
 
-\todo{example}
+\begin{example}
+    In the following example, we follow through an execution of DAF. Figure \ref{fig:dafex} shows the graphs we will 
+    use during the execution.
 
+    \begin{figure}[h!]
+        \centering
+        \begin{subfigure}{.4\textwidth}
+          \centering
+          \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+            \node[main node,label={\scriptsize A}] (A) {\scriptsize$u_1$};
+            \node[main node,label={\scriptsize B}] (B) [below left=of A] {\scriptsize$u_3$};
+            \node[main node,label={\scriptsize C}] (C) [below right =of A] {\scriptsize$u_2$};
+            \node[main node,label={\scriptsize B}] (D) [above right =of C] {\scriptsize$u_4$};    
+            \draw (A) -- (B);
+            \draw (B) -- (C);
+            \draw (C) -- (A);
+            \draw (C) -- (D);
+          \end{tikzpicture}
+          \caption{$q$}
+          \label{fig:dafexq}
+        \end{subfigure}%
+        \begin{subfigure}{.4\textwidth}
+          \centering
+          \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+            \node[main node,label={\scriptsize C}] (1) {\scriptsize$v_1$};
+            \node[main node,label={\scriptsize A}] (2) [below=of 1] {\scriptsize$v_2$};
+            \node[main node,label={\scriptsize B}] (3) [below right =of 2] {\scriptsize$v_3$};
+            \node[main node,label={\scriptsize A}] (4) [right =of 2] {\scriptsize$v_4$};    
+            \node[main node,label={\scriptsize C}] (5) [right =of 3] {\scriptsize$v_5$};    
+            \node[main node,label={\scriptsize B}] (6) [right =of 4] {\scriptsize$v_6$};    
+            \draw (1) -- (2);
+            \draw (2) -- (4);
+            \draw (2) -- (3);
+            \draw (3) -- (4);
+            \draw (3) -- (5);    
+            \draw (4) -- (5);  
+            \draw (5) -- (6);      
+          \end{tikzpicture}
+          \caption{$G$}
+          \label{fig:dafexg}
+        \end{subfigure}    
+        \caption{Graphs for DAF execution example}
+        \label{fig:dafex}
+    \end{figure}
+
+    First, we compute the initial $C_{ini}$ values.
+
+    \[
+        C_{ini}(u_1) = \{v_2, v_4\} \rightarrow \frac{|C_{ini(u_1)}|}{deg_q(u_1)} = \frac{2}{2} = 1
+    \]
+    \[
+        C_{ini}(u_2) = \{v_5\} \rightarrow \frac{|C_{ini(u_2)}|}{deg_q(u_2)} = \frac{1}{3} = 0.\dot{3}
+    \]
+    \[
+        C_{ini}(u_3) = \{v_3\} \rightarrow \frac{|C_{ini(u_3)}|}{deg_q(u_3)} = \frac{1}{2} = 0.5
+    \]
+    \[
+        C_{ini}(u_4) = \{v_3,v_6\} \rightarrow \frac{|C_{ini(u_4)}|}{deg_q(u_4)} = \frac{2}{1} = 2
+    \]
+
+    The smallest number is $0.\dot{3}$, thus the root will be $u_2$. Starting from $u_2$ in $q$, we get
+    the following $q_D$ and $q^{-1}_D$ graphs.
+
+    \begin{figure}[h!]
+        \centering
+        \begin{subfigure}{.4\textwidth}
+            \centering
+            \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+            \node[main node] (2) {\scriptsize$u_2$};
+            \node[main node] (3) [below=of 2] {\scriptsize$u_3$};
+            \node[main node] (1) [below left=of 2] {\scriptsize$u_1$};
+            \node[main node] (4) [below right=of 2] {\scriptsize$u_4$};
+            \draw[->] (2) -- (3);
+            \draw[->] (2) -- (1);
+            \draw[->] (2) -- (4);
+            \draw[->] (1) -- (3);
+          \end{tikzpicture}
+          \caption{$q_D$}
+        \end{subfigure}
+        \begin{subfigure}{.4\textwidth}
+            \centering
+            \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+            \node[main node] (2) {\scriptsize$u_2$};
+            \node[main node] (3) [below=of 2] {\scriptsize$u_3$};
+            \node[main node] (1) [below left=of 2] {\scriptsize$u_1$};
+            \node[main node] (4) [below right=of 2] {\scriptsize$u_4$};
+            \draw[->] (3) -- (2);
+            \draw[->] (1) -- (2);
+            \draw[->] (4) -- (2);
+            \draw[->] (3) -- (1);
+          \end{tikzpicture}
+          \caption{$q^{-1}_D$}
+        \end{subfigure}        
+        \label{fig:dafqd}
+    \end{figure}
+
+    The next step is to create the initial CS structure and then reduce it with the help of $q_D$ and $q^{-1}_D$.
+    Figure \ref{fig:dafinitcs} shows the initial CS structure.
+
+    \begin{figure}[h!]
+        \centering
+        \includegraphics{figures/initcs.png}
+        \caption{Initial CS structure}
+        \label{fig:dafinitcs}
+    \end{figure}
+
+    We use $q' = q^{-1}_D$ for our first refinement. The first vertex will be $u_2$ because it has no children, thus $C'(u_2) = \{v_5\}$
+    The second vertex to be processed is $u_1$ because all its children ($u_2$) has been processed already. $v_2$ is not connected with
+    any of the candidates of $u_2$. Because of this, $v_2$ will no longer be part of $u_1$'s candidates: $C'(u_1) = \{v_4\}$. The next
+    vertex is $u_4$, because its children $u_2$ has been processed. Its new candidates are $C'(u_4) = \{v_3, v_6\}$. The last vertex is
+    $u_3$, for which $C'(u_3) = \{v_3\}$. Figure \ref{fig:dafrefcs} shows the CS structure after the first refinement.
+
+    \begin{figure}[h!]
+        \centering
+        \includegraphics{figures/refinedcs.png}
+        \caption{CS structure after the first refinement}
+        \label{fig:dafrefcs}
+    \end{figure}
+
+    Now $q' = q_D$, however it is not possible to refine CS any further. Next, we find all mappings in CS. The first elements of the 
+    search tree is $u_2$ and its candidate ($u_2, v_5$). The set of extendable vertices is $\{u_1, u_4\}$ because their only parent
+    $u_2$ in $q_D$ has been processed. We compute the appropriate candidates:
+
+    \[ C_m(u_1) = \{v_4\} \]
+    \[ C_m(u_4) = \{v_3, v_6\} \]
+
+    Because of the candidate-size order, we extend the search tree with $u_1$ and its candidate $(u_1, v_4)$. At this point, $u_3$ 
+    becomes extendable because its parents were procesed. Its candidates are $C_m(u_3) = \{v_3\}$, and since it is the only extendable
+    vertex at the moment, we extend the search tree with $(u_3, v_3)$. The only vertex left is $u_4$. $C_m(u_4) = \{v_3, v_6\}$. The
+    search tree is extended with $(u_4, v_3)!$ ($v_3$ is already covered, hence the exclamation mark) and $(u_4, v_6)$. The branch
+    containing $(u_4, v_6)$ corresponds to a whole mapping. The failing sets of all nodes on this branch will be empty. The failing set
+    of $(u_4, v_3)!$ is $F_m = \{u_3, u_4\}$. In this case, failing sets have no effect on the algorithm. Figure \ref{fig:dafst} shows 
+    the search tree with failing sets produced by DAF.
+
+    \begin{figure}[h!]
+        \centering
+        
+        \begin {tikzpicture}[auto, node distance=1cm,thick,main node/.style={circle,draw}]
+        \node[main node,label={\scriptsize $F_m = \emptyset$}] (A) {\scriptsize$u_2,v_5$};
+        \node[main node,label={\scriptsize $F_m = \emptyset$}] (B) [below=of A] {\scriptsize$u_1,v_4$};
+        \node[main node,label={\scriptsize $F_m = \emptyset$}] (C) [below=of B] {\scriptsize$u_3,v_3$};
+        \node[main node,label={\scriptsize $F_m = \emptyset$}] (D) [below right =of C] {\scriptsize$u_4,v_6$};    
+        \node[main node,red,label={\scriptsize $F_m = \{u_3, u_4\}$}] (E) [below left =of C] {\scriptsize$u_4,v_3!$};    
+        \draw (A) -- (B);
+        \draw (B) -- (C);
+        \draw (C) -- (D);
+        \draw (C) -- (E);
+        \end{tikzpicture}
+        
+        \caption{Search tree with failing sets created by DAF}
+        \label{fig:dafst}
+    \end{figure}
+
+    We got as a result that $q$ is isomorphic to one of $G$'s subgraph and the mapping is the following: $(u_1, v_4),(u_2, v_5),(u_3, v_3),(u_4, v_6)$.
+
+\end{example}
