@@ -1,0 +1,12 @@
+\chapter{Future work}
+
+We implemented our algorithms in Python to verify that our approach could work in reality. As stated earlier,
+Python in itself is not suited for high performance algorithms. Future works can include implementing these
+incremental algorithms in a language which allow more fine-tuned memory handling, e.g. C++.
+
+Since both VF2++ and DAF work on tree structures, both algorithm can be naturally implemented paralelly. This
+also aplies for our modified incremental algorithm. Future research can involve parallelizing these algorithms.
+
+Another area of future work would be using neural networks for detecting isomorphisms in large graphs. The use 
+cases may not fully align with out current work, because statistical approaches can not guarantee to find all
+subgraph ismorphisms. However the performance gain might out-weight the issue of missing mappings.
