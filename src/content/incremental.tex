@@ -1,7 +1,7 @@
 \chapter{Incremental algorithms}
 
 This chapter describes two incremental algorithms for finding subgraph isomorphisms
-in dynamic graphs. First we introduce the approach proposed in \cite{incrementalpatternmatching}. Then we present
+in dynamic graphs. First we introduce the approach described by Wenfei Fan in \cite{incrementalpatternmatching}. Then we present
 our generic method which can be applied to DAF and VF2++ respectively.
 
 
@@ -95,6 +95,8 @@ modifications.
 
 \subsection{Node operations}
 
+First, we describe incremental node operations, i.e. vertex insertion and deletion.
+
 \subsubsection{Node deletion}
 
 Deleting a node $v_d$ from $G$ can only reduce the original number of mappings.
@@ -138,8 +140,8 @@ to a node $v \notin N_d(G, v_d)$.
 
 \subsubsection{Node insertion}
 
-Inserting a new node has no effects on mappings whatsoever because at the time of insertion,
-it cannot be part of any mappings because it has not connections. Thus inserting a new node
+Inserting a new node has no effects on mappings because at the time of insertion,
+it cannot be part of any mappings because it has no connections. Thus inserting a new node
 needs no special care.
 
 \subsection{Edge operations}
