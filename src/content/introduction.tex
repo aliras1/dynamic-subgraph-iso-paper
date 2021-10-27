@@ -16,7 +16,7 @@ Such graphs tend to be extremely large with millions of vertices and billions
 of edges in the real world. Although subgraph isomorphism has been extensively
 studied in the past, there was a renewed interest in the topic recently, which
 yielded some notable results. The newer algorithms significantly out-perform
-the previous state-of-the-art solutions \todo{ullman, vf2}, sometimes even 
+the previous state-of-the-art solutions (Ullman's algorithm \cite{Ullmann1976AnAF} \cite{ullmanimpr}, VF2 \cite{vf2} ), sometimes even 
 in order of magnitudes. This made it possible to query subgraph isomorphisms
 in such large graphs. However social networks are not static. In practice, they
 are frequently updated with typically small changes like adding or removing edges.
@@ -27,8 +27,7 @@ algorithms. To minimize unnecessary re-computations, incremental algorithms
 can be used, that compute the changes in matches based on the changes in the
 search graph.
 
-[] \todo{cite \url{https://www.pure.ed.ac.uk/ws/portalfiles/portal/17894104/Fan_Li_ET_AL_2011_Incremental_Graph_Pattern_Matching.pdf}}
-discusses in depth several types of incremental graph pattern matching algorithms.
+\cite{incrementalpatternmatching} discusses in depth several types of incremental graph pattern matching algorithms.
 However the authors' topic of interest in [] is incremental graph pattern matching
 with (bounded) graph simulation. A graph \(G\) matches a pattern \(q\) via graph 
 simulation if there exists a binary relation \(S \subseteq V_q \times V\) such that 
@@ -141,7 +140,7 @@ work.
 
 Since VF2++ is an extension over VF2, first, we describe how VF2 works. It is a recursive 
 algorithm where each state of the matching process can be associated with a partial mapping
-$m$. VF2 starts with an empty mapping \todo{describe mappings in a section above this one} and it 
+$m$. VF2 starts with an empty mapping and it 
 gradually extends it until a whole mapping is reached. For the current mapping $m$, it calculates a 
 candidate set of $(u, v)$ pairs to be included in $m$. It iterates over the
 $(u, v)$ elements of the candidate set, and if $\mathcal{F}(m, (u, v))$ is feasible then it recursively 
@@ -209,7 +208,7 @@ of covered nodes. If there exists no such pair, $P_m$ contains all uncovered nod
 
 \subsection{VF2++}
 
-VF2++ \todo{cite} was published by Alp\'{a}r J\"{u}ttner and P\'{e}ter Madarasi in 2018.
+VF2++ \cite{vf2pp} was published by Alp\'{a}r J\"{u}ttner and P\'{e}ter Madarasi in 2018.
 The algorithm makes performance improvements compared to VF2 by calculating a matching
 order, in which the vertices of $q$ are processed in a partial mapping, and by applying
 a more efficient cutting function.
@@ -459,7 +458,7 @@ Summarizing the two extensions made over VF2, the final VF2++ algorithm is defin
 
 \subsection{DAF}
 
-DAF was originally introduced in \todo{cite}. The algorithm converts the input graphs $q$ and $G$ 
+DAF was originally introduced in \cite{Han2019EfficientSM}. The algorithm converts the input graphs $q$ and $G$ 
 into its own special data structure which is computed by (D)dynamic programming. It also uses an 
 (A)adaptive matching order and (F)failing sets, hence the name, DAF.
 
